@@ -1,0 +1,117 @@
+Here’s a single, copy-paste **master prompt** you can drop into Replit’s AI (or hand to a teammate) to make the UI **interesting, intuitive**, and branded as **RAAP — Reminder as a Service**. It assumes the Flask backend and routes from our app (`/`, `/add`, `/done/<id>`, `/wallpaper.png`).
+
+---
+
+### ✅ Master Prompt for Replit (UI & UX)
+
+**Goal:**
+Design and implement a clean, responsive, delightful UI for **RAAP — Reminder as a Service** that connects to an existing Flask backend with these routes:
+
+* `GET /` — homepage with task list and form to add tasks
+* `POST /add` — add task with fields: `text`, `when` (natural language time)
+* `GET /done/<id>` — mark task done
+* `GET /wallpaper.png?w=<width>&h=<height>&bg=<hex>&fg=<hex>` — live wallpaper image
+
+**Tech & Structure:**
+
+* Single-page **HTML** served by Flask (`/`), using **Tailwind CSS via CDN** (no build steps).
+* Minimal **vanilla JS** for interactivity (no framework).
+* Keep Python routes unchanged (template renders via `render_template_string` or a template file).
+* Respect existing form names: `text`, `when`.
+
+**Brand & Aesthetic (RAAP):**
+
+* Name: **RAAP — Reminder as a Service**
+* Mood: calm, modern, friendly.
+* Color palette (feel free to tweak tonal steps):
+
+  * Primary: `#6C5CE7` (indigo/violet)
+  * Accent:  `#00D1B2` (teal)
+  * Surface: `#0b0b0f` (dark) with soft gradients
+  * Text:    use high-contrast white/near-white on dark
+* Typeface: system UI stack; use larger headings and comfy line-height.
+* Add a soft radial gradient header and glassy cards with rounded-2xl and subtle shadow.
+
+**Layout & Components:**
+
+1. **Header Bar**
+
+   * Left: RAAP logo mark (simple “R⚡︎” or “RAAP” text logo).
+   * Center: Title “RAAP — Reminder as a Service”.
+   * Right: Link button “📱 Wallpaper” → `/wallpaper.png?w=1080&h=1920` (opens new tab).
+2. **Add Task Card**
+
+   * Two inputs inline on desktop, stacked on mobile:
+
+     * Text input (placeholder: “Pay rent, Call mom, Submit report…”)
+     * “When” input (placeholder: “in 15 minutes”, “tomorrow 8am”, “next Monday 9:30”)
+   * Primary button “Add Reminder”.
+   * Helper text line with examples and a subtle info icon.
+3. **Task List**
+
+   * Grouped sections: **Pending** (first) and **Completed** (collapsible).
+   * Each task row shows:
+
+     * Status pill: Pending / Sent / Done (colored badges).
+     * Task title (bold)
+     * Due time (local, e.g. “Thu · 5:30 PM”) with clock icon.
+     * A compact **Done** button (✔) on the right that calls `/done/<id>`.
+     * Overdue tasks styled with a warm highlight (e.g., subtle accent border + “Overdue” chip).
+   * Empty states:
+
+     * Pending empty: “No reminders yet. Add one above!”
+     * Completed hidden by default with a toggle “Show Completed”.
+4. **Right Rail (or Footer on mobile)**
+
+   * “Live Wallpaper” preview: a framed thumbnail that pulls `/wallpaper.png?w=600&h=1300`.
+   * Tip: buttons to copy the wallpaper URL for common sizes (iPhone/Android).
+   * Tiny legend showing your brand colors.
+
+**Interactions & Details:**
+
+* On submit, disable the Add button briefly and show a spinner; re-enable on response.
+* On success, soft toast: “Reminder added ✅”.
+* For `/done/<id>` links, use standard GET (no JS required), but add hover states for clarity.
+* Add a **copy-to-clipboard** button near the wallpaper URL.
+* Keyboard support: Enter submits the add form; focus styles are visible and accessible.
+
+**Accessibility:**
+
+* WCAG AA contrast.
+* Labels tied to inputs; aria-live region for toasts.
+* Focus ring visible for all interactive elements.
+* Prefer `<button>` over clickable `<div>`s.
+
+**Performance & Cleanliness:**
+
+* Inline critical CSS via Tailwind CDN; avoid heavy libraries.
+* Prefer SVG icons (inline) for clock, check, info.
+* Keep JS small and progressive; everything should still work without JS (except niceties like toasts and copy buttons).
+
+**Test Data (optional):**
+
+* If no tasks, render the empty state and guidance.
+* Provide sample natural time hints: `in 3 minutes`, `today 5pm`, `tomorrow 9am`, `next Monday 8am`, `2025-11-06 18:30`.
+
+**Deliverables:**
+
+* One HTML template (or `render_template_string` in Flask) using Tailwind CDN.
+* Small inline `<script>` for: toasts, copy wallpaper URL, and completed toggle.
+* Clean, commented code blocks so a developer can modify styles or swap palettes later.
+
+**Stretch (only if time allows):**
+
+* Toggle theme (Dark default, Light optional).
+* Tiny “Quick Add” presets (chips): `+15m`, `+1h`, `Tonight 9pm`, `Tomorrow 9am`.
+* Inline validation for the “When” field with helpful feedback.
+
+**Do not change:**
+
+* Flask endpoints or form field names.
+* Server logic for add/done/wallpaper.
+
+Build the HTML/CSS/JS and wire it into the Flask template now.
+
+---
+
+If you want, I can also generate a ready-made `index.html` (or `render_template_string` block) that matches this prompt so you can drop it straight in.

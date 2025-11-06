@@ -42,6 +42,13 @@ with st.sidebar:
         st.caption("📧 Email reminders require SMTP configuration")
         st.caption("📱 SMS reminders require Twilio credentials")
         
+        st.subheader("Organization")
+        col_cat, col_pri = st.columns(2)
+        with col_cat:
+            category = st.text_input("Category", placeholder="e.g., Work, Personal")
+        with col_pri:
+            priority = st.selectbox("Priority", ["High", "Medium", "Low"], index=1)
+        
         st.subheader("Recurrence")
         is_recurring = st.checkbox("Make this a recurring task")
         
@@ -70,7 +77,9 @@ with st.sidebar:
                     reminder_hours=reminder_hours,
                     is_recurring=is_recurring,
                     recurrence_frequency=recurrence_frequency,
-                    recurrence_interval=recurrence_interval
+                    recurrence_interval=recurrence_interval,
+                    category=category if category else None,
+                    priority=priority
                 )
                 st.success("Todo added successfully!")
                 st.rerun()
@@ -102,10 +111,19 @@ def display_todo(todo):
             st.markdown(f"### {status_icon}")
         
         with col2:
+            # Priority indicator
+            priority_emoji = {"High": "🔴", "Medium": "🟡", "Low": "🟢"}.get(todo.get('priority', 'Medium'), "🟡")
+            title_text = f"{priority_emoji} "
+            
             if todo['completed']:
-                st.markdown(f"~~**{todo['title']}**~~")
+                title_text += f"~~**{todo['title']}**~~"
             else:
-                st.markdown(f"**{todo['title']}**")
+                title_text += f"**{todo['title']}**"
+            
+            st.markdown(title_text)
+            
+            if todo.get('category'):
+                st.caption(f"📂 {todo['category']}")
             
             if todo['description']:
                 st.caption(todo['description'])
@@ -150,9 +168,19 @@ if not todos:
     st.info("No todos yet! Add your first task using the form on the left.")
 else:
     # Filter options
-    col1, col2 = st.columns([1, 4])
+    col1, col2, col3 = st.columns([2, 2, 3])
     with col1:
         show_completed = st.checkbox("Show completed", value=True)
+    
+    # Get unique categories and priorities
+    categories = sorted(set([t.get('category') for t in todos if t.get('category')]))
+    priorities = ["All", "High", "Medium", "Low"]
+    
+    with col2:
+        selected_category = st.selectbox("Category", ["All"] + categories)
+    
+    with col3:
+        selected_priority = st.selectbox("Priority", priorities)
     
     # Separate todos into categories
     overdue = []
@@ -163,6 +191,14 @@ else:
     now = datetime.now()
     
     for todo in todos:
+        # Apply category filter
+        if selected_category != "All" and todo.get('category') != selected_category:
+            continue
+        
+        # Apply priority filter
+        if selected_priority != "All" and todo.get('priority', 'Medium') != selected_priority:
+            continue
+        
         # Handle both formats: 'T' separator and space separator
         due_date_str = todo['due_date'].replace(' ', 'T') if ' ' in todo['due_date'] else todo['due_date']
         due = datetime.fromisoformat(due_date_str)
@@ -231,6 +267,14 @@ if 'editing_todo' in st.session_state and st.session_state.editing_todo:
             edit_email = st.text_input("Email", value=todo['email'] or "")
             edit_phone = st.text_input("Phone", value=todo['phone'] or "")
             
+            col_cat, col_pri = st.columns(2)
+            with col_cat:
+                edit_category = st.text_input("Category", value=todo.get('category') or "")
+            with col_pri:
+                current_priority = todo.get('priority', 'Medium')
+                edit_priority = st.selectbox("Priority", ["High", "Medium", "Low"], 
+                                            index=["High", "Medium", "Low"].index(current_priority) if current_priority in ["High", "Medium", "Low"] else 1)
+            
             edit_is_recurring = st.checkbox("Make this a recurring task", value=bool(todo.get('is_recurring')))
             
             # Set defaults for recurrence settings
@@ -262,7 +306,9 @@ if 'editing_todo' in st.session_state and st.session_state.editing_todo:
                         reminder_hours=edit_reminder_hours,
                         is_recurring=edit_is_recurring,
                         recurrence_frequency=edit_recurrence_frequency if edit_is_recurring else None,
-                        recurrence_interval=edit_recurrence_interval if edit_is_recurring else None
+                        recurrence_interval=edit_recurrence_interval if edit_is_recurring else None,
+                        category=edit_category if edit_category else None,
+                        priority=edit_priority
                     )
                     del st.session_state.editing_todo
                     st.success("Todo updated!")

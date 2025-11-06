@@ -23,7 +23,9 @@ def init_db():
             reminder_hours INTEGER DEFAULT 24,
             is_recurring INTEGER DEFAULT 0,
             recurrence_frequency TEXT,
-            recurrence_interval INTEGER
+            recurrence_interval INTEGER,
+            category TEXT,
+            priority TEXT DEFAULT 'Medium'
         )
     ''')
     
@@ -45,11 +47,21 @@ def init_db():
         cursor.execute("ALTER TABLE todos ADD COLUMN recurrence_interval INTEGER")
         print("Migration complete.")
     
+    # Migration: Add category and priority columns if they don't exist
+    try:
+        cursor.execute("SELECT category FROM todos LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Migrating database: Adding category and priority columns...")
+        cursor.execute("ALTER TABLE todos ADD COLUMN category TEXT")
+        cursor.execute("ALTER TABLE todos ADD COLUMN priority TEXT DEFAULT 'Medium'")
+        print("Migration complete.")
+    
     conn.commit()
     conn.close()
 
 def add_todo(title: str, description: str, due_date: str, email: str = "", phone: str = "", reminder_hours: int = 24, 
-             is_recurring: bool = False, recurrence_frequency: Optional[str] = None, recurrence_interval: Optional[int] = None) -> int:
+             is_recurring: bool = False, recurrence_frequency: Optional[str] = None, recurrence_interval: Optional[int] = None,
+             category: Optional[str] = None, priority: str = "Medium") -> int:
     """Add a new todo to the database."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -59,10 +71,10 @@ def add_todo(title: str, description: str, due_date: str, email: str = "", phone
     
     cursor.execute('''
         INSERT INTO todos (title, description, due_date, email, phone, reminder_hours, 
-                          is_recurring, recurrence_frequency, recurrence_interval)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                          is_recurring, recurrence_frequency, recurrence_interval, category, priority)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (title, description, normalized_due_date, email, phone, reminder_hours,
-          1 if is_recurring else 0, recurrence_frequency, recurrence_interval))
+          1 if is_recurring else 0, recurrence_frequency, recurrence_interval, category, priority))
     
     todo_id = cursor.lastrowid
     conn.commit()
@@ -96,7 +108,8 @@ def get_todo_by_id(todo_id: int) -> Optional[Dict]:
     return todo
 
 def update_todo(todo_id: int, title: str, description: str, due_date: str, email: str = "", phone: str = "", reminder_hours: int = 24,
-               is_recurring: bool = False, recurrence_frequency: Optional[str] = None, recurrence_interval: Optional[int] = None):
+               is_recurring: bool = False, recurrence_frequency: Optional[str] = None, recurrence_interval: Optional[int] = None,
+               category: Optional[str] = None, priority: str = "Medium"):
     """Update an existing todo."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -107,10 +120,10 @@ def update_todo(todo_id: int, title: str, description: str, due_date: str, email
     cursor.execute('''
         UPDATE todos
         SET title = ?, description = ?, due_date = ?, email = ?, phone = ?, reminder_hours = ?,
-            is_recurring = ?, recurrence_frequency = ?, recurrence_interval = ?
+            is_recurring = ?, recurrence_frequency = ?, recurrence_interval = ?, category = ?, priority = ?
         WHERE id = ?
     ''', (title, description, normalized_due_date, email, phone, reminder_hours,
-          1 if is_recurring else 0, recurrence_frequency, recurrence_interval, todo_id))
+          1 if is_recurring else 0, recurrence_frequency, recurrence_interval, category, priority, todo_id))
     
     conn.commit()
     conn.close()
