@@ -2,6 +2,9 @@ import streamlit as st
 from datetime import datetime, timedelta
 import database
 import scheduler
+import csv
+import io
+from fpdf import FPDF
 
 # Initialize database
 database.init_db()
@@ -85,6 +88,78 @@ with st.sidebar:
                 st.rerun()
             else:
                 st.error("Please fill in the required fields (Title and Due Date)")
+
+def export_to_csv(todos):
+    """Export todos to CSV format."""
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Write header
+    writer.writerow(['Title', 'Description', 'Due Date', 'Priority', 'Category', 'Status', 'Recurring', 'Email', 'Phone'])
+    
+    # Write todos
+    for todo in todos:
+        writer.writerow([
+            todo['title'],
+            todo.get('description', ''),
+            todo['due_date'],
+            todo.get('priority', 'Medium'),
+            todo.get('category', ''),
+            'Completed' if todo['completed'] else 'Pending',
+            'Yes' if todo.get('is_recurring') else 'No',
+            todo.get('email', ''),
+            todo.get('phone', '')
+        ])
+    
+    return output.getvalue()
+
+def export_to_pdf(todos):
+    """Export todos to PDF format."""
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(0, 10, 'Todo List Export', ln=True, align='C')
+    pdf.ln(5)
+    
+    pdf.set_font("Arial", '', 10)
+    pdf.cell(0, 10, f'Generated on: {datetime.now().strftime("%Y-%m-%d %H:%M")}', ln=True)
+    pdf.ln(5)
+    
+    # Add todos
+    for todo in todos:
+        pdf.set_font("Arial", 'B', 12)
+        priority_text = {'High': '[HIGH]', 'Medium': '[MED]', 'Low': '[LOW]'}.get(todo.get('priority', 'Medium'), '[MED]')
+        status_text = '[DONE]' if todo['completed'] else '[TODO]'
+        
+        title_line = f"{status_text} {priority_text} {todo['title']}"
+        pdf.cell(0, 10, title_line, ln=True)
+        
+        pdf.set_font("Arial", '', 10)
+        if todo.get('category'):
+            pdf.cell(0, 6, f"Category: {todo['category']}", ln=True)
+        
+        pdf.cell(0, 6, f"Due: {todo['due_date']}", ln=True)
+        
+        if todo.get('description'):
+            pdf.multi_cell(0, 6, f"Description: {todo['description']}")
+        
+        if todo.get('is_recurring'):
+            freq = todo.get('recurrence_frequency', 'days')
+            interval = todo.get('recurrence_interval', 1)
+            pdf.cell(0, 6, f"Recurring: Every {interval} {freq}", ln=True)
+        
+        if todo.get('email') or todo.get('phone'):
+            contact = []
+            if todo.get('email'):
+                contact.append(f"Email: {todo['email']}")
+            if todo.get('phone'):
+                contact.append(f"Phone: {todo['phone']}")
+            pdf.cell(0, 6, ' | '.join(contact), ln=True)
+        
+        pdf.ln(3)
+    
+    # output() returns bytearray in fpdf2, convert to bytes for streamlit
+    return bytes(pdf.output())
 
 def display_todo(todo):
     """Display a single todo item with actions."""
@@ -181,6 +256,34 @@ else:
     
     with col3:
         selected_priority = st.selectbox("Priority", priorities)
+    
+    # Export buttons
+    st.markdown("---")
+    col_exp1, col_exp2, col_exp3 = st.columns([1, 1, 4])
+    
+    with col_exp1:
+        if st.button("📥 Export to CSV", use_container_width=True):
+            csv_data = export_to_csv(todos)
+            st.download_button(
+                label="Download CSV",
+                data=csv_data,
+                file_name=f"todos_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv",
+                key="download_csv"
+            )
+    
+    with col_exp2:
+        if st.button("📄 Export to PDF", use_container_width=True):
+            pdf_data = export_to_pdf(todos)
+            st.download_button(
+                label="Download PDF",
+                data=pdf_data,
+                file_name=f"todos_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                mime="application/pdf",
+                key="download_pdf"
+            )
+    
+    st.markdown("---")
     
     # Separate todos into categories
     overdue = []
