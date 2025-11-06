@@ -19,14 +19,23 @@ def init_db():
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             email TEXT,
             phone TEXT,
-            reminder_sent INTEGER DEFAULT 0
+            reminder_sent INTEGER DEFAULT 0,
+            reminder_hours INTEGER DEFAULT 24
         )
     ''')
+    
+    # Migration: Add reminder_hours column if it doesn't exist
+    try:
+        cursor.execute("SELECT reminder_hours FROM todos LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Migrating database: Adding reminder_hours column...")
+        cursor.execute("ALTER TABLE todos ADD COLUMN reminder_hours INTEGER DEFAULT 24")
+        print("Migration complete.")
     
     conn.commit()
     conn.close()
 
-def add_todo(title: str, description: str, due_date: str, email: str = "", phone: str = "") -> int:
+def add_todo(title: str, description: str, due_date: str, email: str = "", phone: str = "", reminder_hours: int = 24) -> int:
     """Add a new todo to the database."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -35,9 +44,9 @@ def add_todo(title: str, description: str, due_date: str, email: str = "", phone
     normalized_due_date = due_date.replace('T', ' ')
     
     cursor.execute('''
-        INSERT INTO todos (title, description, due_date, email, phone)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (title, description, normalized_due_date, email, phone))
+        INSERT INTO todos (title, description, due_date, email, phone, reminder_hours)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (title, description, normalized_due_date, email, phone, reminder_hours))
     
     todo_id = cursor.lastrowid
     conn.commit()
@@ -70,7 +79,7 @@ def get_todo_by_id(todo_id: int) -> Optional[Dict]:
     conn.close()
     return todo
 
-def update_todo(todo_id: int, title: str, description: str, due_date: str, email: str = "", phone: str = ""):
+def update_todo(todo_id: int, title: str, description: str, due_date: str, email: str = "", phone: str = "", reminder_hours: int = 24):
     """Update an existing todo."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -80,9 +89,9 @@ def update_todo(todo_id: int, title: str, description: str, due_date: str, email
     
     cursor.execute('''
         UPDATE todos
-        SET title = ?, description = ?, due_date = ?, email = ?, phone = ?
+        SET title = ?, description = ?, due_date = ?, email = ?, phone = ?, reminder_hours = ?
         WHERE id = ?
-    ''', (title, description, normalized_due_date, email, phone, todo_id))
+    ''', (title, description, normalized_due_date, email, phone, reminder_hours, todo_id))
     
     conn.commit()
     conn.close()
@@ -111,30 +120,41 @@ def delete_todo(todo_id: int):
     conn.commit()
     conn.close()
 
-def get_upcoming_todos(hours_ahead: int = 24) -> List[Dict]:
-    """Get todos that are due within the specified hours and haven't had reminders sent."""
+def get_upcoming_todos() -> List[Dict]:
+    """Get todos that need reminders sent based on their individual reminder_hours setting."""
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
     now = datetime.now()
-    future = datetime.fromtimestamp(now.timestamp() + hours_ahead * 3600)
-    
-    # Format datetime strings to match SQLite storage format (without 'T' separator)
     now_str = now.strftime('%Y-%m-%d %H:%M:%S')
-    future_str = future.strftime('%Y-%m-%d %H:%M:%S')
     
-    # Normalize due_date in the query to handle both 'T' and space separators
+    # Get all incomplete todos that haven't had reminders sent
+    # We'll filter by individual reminder_hours in Python since SQLite doesn't support datetime arithmetic well
     cursor.execute('''
         SELECT * FROM todos
         WHERE completed = 0
         AND reminder_sent = 0
-        AND REPLACE(due_date, 'T', ' ') <= ?
         AND REPLACE(due_date, 'T', ' ') > ?
-    ''', (future_str, now_str))
+    ''', (now_str,))
     
     rows = cursor.fetchall()
-    todos = [dict(row) for row in rows]
+    todos = []
+    
+    for row in rows:
+        todo = dict(row)
+        # Parse the due date
+        due_date_str = todo['due_date'].replace(' ', 'T') if ' ' in todo['due_date'] else todo['due_date']
+        due_date = datetime.fromisoformat(due_date_str)
+        
+        # Calculate when reminder should be sent
+        reminder_hours = todo.get('reminder_hours', 24)
+        time_until_due = (due_date - now).total_seconds() / 3600  # hours
+        
+        # Send reminder if we're within the reminder window
+        if 0 < time_until_due <= reminder_hours:
+            todos.append(todo)
+    
     conn.close()
     return todos
 

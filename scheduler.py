@@ -10,8 +10,8 @@ def check_and_send_reminders():
     """Check for upcoming todos and send reminders."""
     print(f"[{datetime.now()}] Checking for upcoming todos...")
     
-    # Get todos due in the next 24 hours that haven't had reminders sent
-    upcoming_todos = database.get_upcoming_todos(hours_ahead=24)
+    # Get todos that need reminders based on their individual reminder_hours setting
+    upcoming_todos = database.get_upcoming_todos()
     
     if not upcoming_todos:
         print("No upcoming todos requiring reminders.")

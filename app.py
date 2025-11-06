@@ -30,6 +30,12 @@ with st.sidebar:
         due_time = st.time_input("Due Time *", value=datetime.now().time())
         
         st.subheader("Reminder Settings")
+        reminder_hours = st.selectbox(
+            "Send reminder before due date",
+            options=[1, 2, 6, 12, 24, 48, 72, 168],
+            index=4,
+            format_func=lambda x: f"{x} hour{'s' if x != 1 else ''}" if x < 24 else f"{x//24} day{'s' if x//24 != 1 else ''}"
+        )
         email = st.text_input("Email", placeholder="your@email.com")
         phone = st.text_input("Phone", placeholder="+1234567890")
         
@@ -47,7 +53,8 @@ with st.sidebar:
                     description=description,
                     due_date=due_datetime.isoformat(),
                     email=email,
-                    phone=phone
+                    phone=phone,
+                    reminder_hours=reminder_hours
                 )
                 st.success("Todo added successfully!")
                 st.rerun()
@@ -189,6 +196,17 @@ if 'editing_todo' in st.session_state and st.session_state.editing_todo:
             edit_description = st.text_area("Description", value=todo['description'] or "")
             edit_due_date = st.date_input("Due Date", value=due_datetime.date())
             edit_due_time = st.time_input("Due Time", value=due_datetime.time())
+            
+            current_reminder_hours = todo.get('reminder_hours', 24)
+            reminder_options = [1, 2, 6, 12, 24, 48, 72, 168]
+            default_index = reminder_options.index(current_reminder_hours) if current_reminder_hours in reminder_options else 4
+            
+            edit_reminder_hours = st.selectbox(
+                "Send reminder before due date",
+                options=reminder_options,
+                index=default_index,
+                format_func=lambda x: f"{x} hour{'s' if x != 1 else ''}" if x < 24 else f"{x//24} day{'s' if x//24 != 1 else ''}"
+            )
             edit_email = st.text_input("Email", value=todo['email'] or "")
             edit_phone = st.text_input("Phone", value=todo['phone'] or "")
             
@@ -202,7 +220,8 @@ if 'editing_todo' in st.session_state and st.session_state.editing_todo:
                         description=edit_description or "",
                         due_date=edit_due_datetime.isoformat(),
                         email=edit_email or "",
-                        phone=edit_phone or ""
+                        phone=edit_phone or "",
+                        reminder_hours=edit_reminder_hours
                     )
                     del st.session_state.editing_todo
                     st.success("Todo updated!")
@@ -229,5 +248,5 @@ with st.expander("⚙️ Reminder Configuration"):
     - `TWILIO_AUTH_TOKEN`: Your Twilio Auth Token
     - `TWILIO_PHONE_NUMBER`: Your Twilio phone number
     
-    Reminders are checked every hour for todos due within the next 24 hours.
+    Reminders are checked every hour. Each todo can have its own custom reminder interval (1 hour to 7 days before due date).
     """)
