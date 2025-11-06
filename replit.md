@@ -1,8 +1,10 @@
-# Todo List with Reminders
+# RAAP — Reminder as a Service
 
 ## Overview
 
-This is a comprehensive task management application built with Streamlit that allows users to create, organize, and track todos with automated email and SMS reminders. The application monitors upcoming tasks and sends notifications before due dates to help users stay on top of their responsibilities.
+**⚡ RAAP (Reminder as a Service)** is a comprehensive task management application built with Streamlit that allows users to create, organize, and track todos with automated email and SMS reminders. The application monitors upcoming tasks and sends notifications before due dates to help users stay on top of their responsibilities.
+
+**Tagline:** "Never miss what matters"
 
 **Key Features:**
 - **Task Management**: Create tasks with titles, descriptions, due dates/times, and contact information
@@ -11,7 +13,7 @@ This is a comprehensive task management application built with Streamlit that al
 - **Organization**: Categories and priority levels (High/Medium/Low) with color-coded indicators
 - **Filtering**: Filter todos by category, priority, and completion status
 - **Export**: Export todo list to CSV or PDF format with timestamped filenames
-- **Visual Status**: Color-coded priority indicators and status icons for better task visibility
+- **Modern UI**: Dark-themed interface with custom RAAP branding and color palette
 
 ## User Preferences
 
@@ -20,7 +22,7 @@ Preferred communication style: Simple, everyday language.
 ## System Architecture
 
 ### Frontend Architecture
-**Framework: Streamlit**
+**Framework: Streamlit with Custom CSS**
 - **Problem**: Need an accessible, web-based interface for task management
 - **Solution**: Streamlit provides a Python-native way to build interactive web applications without frontend complexity
 - **Rationale**: Quick development, built-in form handling, and automatic UI updates make it ideal for rapid prototyping and simple CRUD operations
@@ -28,6 +30,36 @@ Preferred communication style: Simple, everyday language.
 - **Cons**: Limited customization, not suitable for complex UX requirements
 
 The interface uses a sidebar form for adding/editing todos and the main area for displaying task lists. Layout is configured as "wide" to maximize screen real estate.
+
+### UI/UX Design System
+**RAAP Brand Identity**
+- **Branding**: ⚡ RAAP — Reminder as a Service
+- **Tagline**: "Never miss what matters"
+- **Design Philosophy**: Modern, calm, professional aesthetic with dark theme
+
+**Color Palette**
+- **Primary**: `#6C5CE7` (Indigo/Violet) - Used for main branding, buttons, and key UI elements
+- **Accent**: `#00D1B2` (Teal) - Used for section headers, highlights, and interactive elements
+- **Surface**: `#0b0b0f` to `#1a1520` gradient - Dark background with subtle purple gradient
+- **Priority Colors**:
+  - High: `#ff6b6b` (Red/Coral)
+  - Medium: `#ffd93d` (Yellow)
+  - Low: `#6bcf7f` (Green)
+- **Text**: `#F8F9FA` (Off-white) with varying opacity levels for hierarchy
+
+**Visual Elements**
+- **Priority Badges**: HTML `<span>` elements with colored backgrounds and rounded corners
+- **Section Headers**: Custom styled with RAAP colors, emojis, and descriptive subtitles
+- **Buttons**: Gradient backgrounds with hover effects and full-width styling
+- **Cards**: Subtle borders, dark backgrounds with slight transparency
+- **Forms**: Organized layout with clear visual hierarchy and spacing
+- **Configuration**: Expandable section with formatted HTML content
+
+**Typography**
+- Default Streamlit fonts with custom sizing and color hierarchy
+- Headers use gradient colors for visual interest
+- Descriptions use reduced opacity for secondary information
+- Monospace font for configuration variable names
 
 ### Backend Architecture
 **Pattern: Monolithic Python Application**
@@ -117,11 +149,20 @@ The interface uses a sidebar form for adding/editing todos and the main area for
 
 ## Recent Changes
 
-### November 6, 2025
+### November 6, 2025 - Latest Update
+- **RAAP Rebranding**: Complete rebrand to "RAAP — Reminder as a Service" with new visual identity
+- **Custom Dark Theme**: Implemented dark theme with RAAP color palette (indigo primary, teal accent)
+- **UI Redesign**: Modern interface with custom CSS, styled headers, and gradient backgrounds
+- **HTML Priority Badges**: Replaced emoji indicators with styled HTML badges using RAAP colors
+- **Enhanced Visual Hierarchy**: Improved section organization with colored headers and descriptions
+- **Styled Configuration Section**: Reformatted setup guide with RAAP branding and clear organization
+- **Button Styling**: Added gradient backgrounds and hover effects to all buttons
+- **Form Improvements**: Better layout and visual organization for add/edit forms
+
+### November 6, 2025 - Earlier Updates
 - **Customizable Reminder Intervals**: Added `reminder_hours` field to database with options from 1 hour to 7 days
 - **Recurring Tasks**: Implemented automatic rescheduling with support for daily, weekly, monthly, and yearly recurrence
-- **Categories and Priorities**: Added category field and priority levels (High/Medium/Low) with color-coded emoji indicators (🔴/🟡/🟢)
+- **Categories and Priorities**: Added category field and priority levels (High/Medium/Low) with color-coded indicators
 - **Advanced Filtering**: Added dropdown filters for category and priority with "All" option
 - **Export Functionality**: Implemented CSV and PDF export with comprehensive todo data and timestamped filenames
 - **Database Migration**: Added automatic schema migration support to handle new fields without data loss
-- **UI Enhancements**: Improved visual organization with priority indicators and category labels
