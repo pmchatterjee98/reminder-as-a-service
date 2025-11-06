@@ -567,7 +567,8 @@ if 'editing_todo' in st.session_state and st.session_state.editing_todo:
         due_date_str = todo['due_date'].replace(' ', 'T') if ' ' in todo['due_date'] else todo['due_date']
         due_datetime = datetime.fromisoformat(due_date_str)
         
-        with st.form("edit_todo_form"):
+        # Use unique key for form to ensure proper re-rendering with values
+        with st.form(f"edit_todo_form_{todo_id}"):
             edit_title = st.text_input("Title", value=todo['title'])
             edit_description = st.text_area("Description", value=todo['description'] or "")
             edit_due_date = st.date_input("Due Date", value=due_datetime.date())
