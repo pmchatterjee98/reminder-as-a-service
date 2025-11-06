@@ -42,6 +42,19 @@ with st.sidebar:
         st.caption("📧 Email reminders require SMTP configuration")
         st.caption("📱 SMS reminders require Twilio credentials")
         
+        st.subheader("Recurrence")
+        is_recurring = st.checkbox("Make this a recurring task")
+        
+        recurrence_frequency = None
+        recurrence_interval = None
+        
+        if is_recurring:
+            col_freq, col_int = st.columns(2)
+            with col_freq:
+                recurrence_frequency = st.selectbox("Repeat every", ["days", "weeks", "months", "years"])
+            with col_int:
+                recurrence_interval = st.number_input("Interval", min_value=1, value=1, step=1)
+        
         submitted = st.form_submit_button("Add Todo", use_container_width=True)
         
         if submitted:
@@ -54,7 +67,10 @@ with st.sidebar:
                     due_date=due_datetime.isoformat(),
                     email=email,
                     phone=phone,
-                    reminder_hours=reminder_hours
+                    reminder_hours=reminder_hours,
+                    is_recurring=is_recurring,
+                    recurrence_frequency=recurrence_frequency,
+                    recurrence_interval=recurrence_interval
                 )
                 st.success("Todo added successfully!")
                 st.rerun()
@@ -96,6 +112,11 @@ def display_todo(todo):
         
         with col3:
             st.caption(f"📅 Due: {due.strftime('%Y-%m-%d %H:%M')}")
+            
+            if todo.get('is_recurring'):
+                freq = todo.get('recurrence_frequency', 'days')
+                interval = todo.get('recurrence_interval', 1)
+                st.caption(f"🔁 Repeats every {interval} {freq}")
             
             if todo['email']:
                 st.caption(f"📧 {todo['email']}")
@@ -210,6 +231,23 @@ if 'editing_todo' in st.session_state and st.session_state.editing_todo:
             edit_email = st.text_input("Email", value=todo['email'] or "")
             edit_phone = st.text_input("Phone", value=todo['phone'] or "")
             
+            edit_is_recurring = st.checkbox("Make this a recurring task", value=bool(todo.get('is_recurring')))
+            
+            # Set defaults for recurrence settings
+            default_frequency = todo.get('recurrence_frequency') or 'days'
+            default_interval = todo.get('recurrence_interval') or 1
+            
+            edit_recurrence_frequency = default_frequency
+            edit_recurrence_interval = default_interval
+            
+            if edit_is_recurring:
+                col_freq, col_int = st.columns(2)
+                with col_freq:
+                    edit_recurrence_frequency = st.selectbox("Repeat every", ["days", "weeks", "months", "years"],
+                                                            index=["days", "weeks", "months", "years"].index(default_frequency) if default_frequency in ["days", "weeks", "months", "years"] else 0)
+                with col_int:
+                    edit_recurrence_interval = st.number_input("Interval", min_value=1, value=int(default_interval), step=1)
+            
             col1, col2 = st.columns(2)
             with col1:
                 if st.form_submit_button("Save Changes", use_container_width=True):
@@ -221,7 +259,10 @@ if 'editing_todo' in st.session_state and st.session_state.editing_todo:
                         due_date=edit_due_datetime.isoformat(),
                         email=edit_email or "",
                         phone=edit_phone or "",
-                        reminder_hours=edit_reminder_hours
+                        reminder_hours=edit_reminder_hours,
+                        is_recurring=edit_is_recurring,
+                        recurrence_frequency=edit_recurrence_frequency if edit_is_recurring else None,
+                        recurrence_interval=edit_recurrence_interval if edit_is_recurring else None
                     )
                     del st.session_state.editing_todo
                     st.success("Todo updated!")

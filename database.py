@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 
 DB_NAME = "todos.db"
@@ -20,7 +20,10 @@ def init_db():
             email TEXT,
             phone TEXT,
             reminder_sent INTEGER DEFAULT 0,
-            reminder_hours INTEGER DEFAULT 24
+            reminder_hours INTEGER DEFAULT 24,
+            is_recurring INTEGER DEFAULT 0,
+            recurrence_frequency TEXT,
+            recurrence_interval INTEGER
         )
     ''')
     
@@ -32,10 +35,21 @@ def init_db():
         cursor.execute("ALTER TABLE todos ADD COLUMN reminder_hours INTEGER DEFAULT 24")
         print("Migration complete.")
     
+    # Migration: Add recurring task columns if they don't exist
+    try:
+        cursor.execute("SELECT is_recurring FROM todos LIMIT 1")
+    except sqlite3.OperationalError:
+        print("Migrating database: Adding recurring task columns...")
+        cursor.execute("ALTER TABLE todos ADD COLUMN is_recurring INTEGER DEFAULT 0")
+        cursor.execute("ALTER TABLE todos ADD COLUMN recurrence_frequency TEXT")
+        cursor.execute("ALTER TABLE todos ADD COLUMN recurrence_interval INTEGER")
+        print("Migration complete.")
+    
     conn.commit()
     conn.close()
 
-def add_todo(title: str, description: str, due_date: str, email: str = "", phone: str = "", reminder_hours: int = 24) -> int:
+def add_todo(title: str, description: str, due_date: str, email: str = "", phone: str = "", reminder_hours: int = 24, 
+             is_recurring: bool = False, recurrence_frequency: Optional[str] = None, recurrence_interval: Optional[int] = None) -> int:
     """Add a new todo to the database."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -44,9 +58,11 @@ def add_todo(title: str, description: str, due_date: str, email: str = "", phone
     normalized_due_date = due_date.replace('T', ' ')
     
     cursor.execute('''
-        INSERT INTO todos (title, description, due_date, email, phone, reminder_hours)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', (title, description, normalized_due_date, email, phone, reminder_hours))
+        INSERT INTO todos (title, description, due_date, email, phone, reminder_hours, 
+                          is_recurring, recurrence_frequency, recurrence_interval)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (title, description, normalized_due_date, email, phone, reminder_hours,
+          1 if is_recurring else 0, recurrence_frequency, recurrence_interval))
     
     todo_id = cursor.lastrowid
     conn.commit()
@@ -79,7 +95,8 @@ def get_todo_by_id(todo_id: int) -> Optional[Dict]:
     conn.close()
     return todo
 
-def update_todo(todo_id: int, title: str, description: str, due_date: str, email: str = "", phone: str = "", reminder_hours: int = 24):
+def update_todo(todo_id: int, title: str, description: str, due_date: str, email: str = "", phone: str = "", reminder_hours: int = 24,
+               is_recurring: bool = False, recurrence_frequency: Optional[str] = None, recurrence_interval: Optional[int] = None):
     """Update an existing todo."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -89,23 +106,56 @@ def update_todo(todo_id: int, title: str, description: str, due_date: str, email
     
     cursor.execute('''
         UPDATE todos
-        SET title = ?, description = ?, due_date = ?, email = ?, phone = ?, reminder_hours = ?
+        SET title = ?, description = ?, due_date = ?, email = ?, phone = ?, reminder_hours = ?,
+            is_recurring = ?, recurrence_frequency = ?, recurrence_interval = ?
         WHERE id = ?
-    ''', (title, description, normalized_due_date, email, phone, reminder_hours, todo_id))
+    ''', (title, description, normalized_due_date, email, phone, reminder_hours,
+          1 if is_recurring else 0, recurrence_frequency, recurrence_interval, todo_id))
     
     conn.commit()
     conn.close()
 
 def toggle_complete(todo_id: int):
-    """Toggle the completion status of a todo."""
+    """Toggle the completion status of a todo. For recurring tasks, reschedule instead of marking complete."""
     conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
-    cursor.execute('SELECT completed FROM todos WHERE id = ?', (todo_id,))
-    current_status = cursor.fetchone()[0]
+    cursor.execute('SELECT * FROM todos WHERE id = ?', (todo_id,))
+    todo = dict(cursor.fetchone())
+    current_status = todo['completed']
     new_status = 0 if current_status else 1
     
-    cursor.execute('UPDATE todos SET completed = ? WHERE id = ?', (new_status, todo_id))
+    # If completing a recurring task, reschedule it instead
+    if new_status == 1 and todo.get('is_recurring'):
+        # Parse the current due date
+        due_date_str = todo['due_date'].replace(' ', 'T') if ' ' in todo['due_date'] else todo['due_date']
+        current_due_date = datetime.fromisoformat(due_date_str)
+        
+        # Calculate next due date based on recurrence settings
+        frequency = todo.get('recurrence_frequency', 'days')
+        interval = todo.get('recurrence_interval', 1)
+        
+        if frequency == 'days':
+            next_due_date = current_due_date + timedelta(days=interval)
+        elif frequency == 'weeks':
+            next_due_date = current_due_date + timedelta(weeks=interval)
+        elif frequency == 'months':
+            # Approximate months as 30 days
+            next_due_date = current_due_date + timedelta(days=30 * interval)
+        elif frequency == 'years':
+            # Approximate years as 365 days
+            next_due_date = current_due_date + timedelta(days=365 * interval)
+        else:
+            next_due_date = current_due_date + timedelta(days=interval)
+        
+        # Update the due date and reset reminder_sent
+        normalized_due_date = next_due_date.strftime('%Y-%m-%d %H:%M:%S')
+        cursor.execute('UPDATE todos SET due_date = ?, reminder_sent = 0 WHERE id = ?', 
+                      (normalized_due_date, todo_id))
+    else:
+        # Regular toggle for non-recurring tasks
+        cursor.execute('UPDATE todos SET completed = ? WHERE id = ?', (new_status, todo_id))
     
     conn.commit()
     conn.close()
