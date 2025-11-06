@@ -14,16 +14,16 @@ scheduler.start_scheduler()
 
 # Page configuration
 st.set_page_config(
-    page_title="RAAP — Reminder as a Service",
+    page_title="RAAS — Reminder as a Service",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for RAAP branding and modern UI
+# Custom CSS for RAAS branding and modern UI
 st.markdown("""
 <style>
-    /* RAAP Color Palette */
+    /* RAAS Color Palette */
     :root {
         --raap-primary: #6C5CE7;
         --raap-accent: #00D1B2;
@@ -175,7 +175,7 @@ st.markdown("""
 # Header with branding
 st.markdown("""
 <div style="text-align: center; margin-bottom: 2rem;">
-    <h1 style="margin-bottom: 0.5rem;">⚡ RAAP</h1>
+    <h1 style="margin-bottom: 0.5rem;">⚡ RAAS</h1>
     <p style="color: rgba(248, 249, 250, 0.7); font-size: 1.1rem; margin-top: 0;">
         Reminder as a Service — Never miss what matters
     </p>
@@ -353,7 +353,7 @@ def display_todo(todo):
             st.markdown(f"### {status_icon}")
         
         with col2:
-            # Priority badge with RAAP colors
+            # Priority badge with RAAS colors
             priority = todo.get('priority', 'Medium')
             priority_colors = {
                 "High": {"bg": "#ff6b6b", "text": "white"},
@@ -667,7 +667,7 @@ with st.expander("⚙️ Configuration & Setup Guide"):
         
         <h3 style="color: #00D1B2; margin-top: 1.5rem;">⚡ How It Works</h3>
         <p style="color: rgba(248, 249, 250, 0.7); line-height: 1.6;">
-            RAAP checks for upcoming reminders every hour. Each reminder can have a custom alert interval from 1 hour to 7 days before the due date. When it's time, you'll receive notifications via your preferred channels!
+            RAAS checks for upcoming reminders every hour. Each reminder can have a custom alert interval from 1 hour to 7 days before the due date. When it's time, you'll receive notifications via your preferred channels!
         </p>
     </div>
     """, unsafe_allow_html=True)

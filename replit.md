@@ -1,8 +1,8 @@
-# RAAP — Reminder as a Service
+# RAAS — Reminder as a Service
 
 ## Overview
 
-**⚡ RAAP (Reminder as a Service)** is a comprehensive task management application built with Streamlit that allows users to create, organize, and track todos with automated email and SMS reminders. The application monitors upcoming tasks and sends notifications before due dates to help users stay on top of their responsibilities.
+**⚡ RAAS (Reminder as a Service)** is a comprehensive task management application built with Streamlit that allows users to create, organize, and track todos with automated email and SMS reminders. The application monitors upcoming tasks and sends notifications before due dates to help users stay on top of their responsibilities.
 
 **Tagline:** "Never miss what matters"
 
@@ -13,7 +13,7 @@
 - **Organization**: Categories and priority levels (High/Medium/Low) with color-coded indicators
 - **Filtering**: Filter todos by category, priority, and completion status
 - **Export**: Export todo list to CSV or PDF format with timestamped filenames
-- **Modern UI**: Dark-themed interface with custom RAAP branding and color palette
+- **Modern UI**: Dark-themed interface with custom RAAS branding and color palette
 
 ## User Preferences
 
@@ -32,8 +32,8 @@ Preferred communication style: Simple, everyday language.
 The interface uses a sidebar form for adding/editing todos and the main area for displaying task lists. Layout is configured as "wide" to maximize screen real estate.
 
 ### UI/UX Design System
-**RAAP Brand Identity**
-- **Branding**: ⚡ RAAP — Reminder as a Service
+**RAAS Brand Identity**
+- **Branding**: ⚡ RAAS — Reminder as a Service
 - **Tagline**: "Never miss what matters"
 - **Design Philosophy**: Modern, calm, professional aesthetic with dark theme
 
@@ -49,7 +49,7 @@ The interface uses a sidebar form for adding/editing todos and the main area for
 
 **Visual Elements**
 - **Priority Badges**: HTML `<span>` elements with colored backgrounds and rounded corners
-- **Section Headers**: Custom styled with RAAP colors, emojis, and descriptive subtitles
+- **Section Headers**: Custom styled with RAAS colors, emojis, and descriptive subtitles
 - **Buttons**: Gradient backgrounds with hover effects and full-width styling
 - **Cards**: Subtle borders, dark backgrounds with slight transparency
 - **Forms**: Organized layout with clear visual hierarchy and spacing
@@ -150,12 +150,12 @@ The interface uses a sidebar form for adding/editing todos and the main area for
 ## Recent Changes
 
 ### November 6, 2025 - Latest Update
-- **RAAP Rebranding**: Complete rebrand to "RAAP — Reminder as a Service" with new visual identity
-- **Custom Dark Theme**: Implemented dark theme with RAAP color palette (indigo primary, teal accent)
+- **RAAS Rebranding**: Complete rebrand to "RAAS — Reminder as a Service" with new visual identity
+- **Custom Dark Theme**: Implemented dark theme with RAAS color palette (indigo primary, teal accent)
 - **UI Redesign**: Modern interface with custom CSS, styled headers, and gradient backgrounds
-- **HTML Priority Badges**: Replaced emoji indicators with styled HTML badges using RAAP colors
+- **HTML Priority Badges**: Replaced emoji indicators with styled HTML badges using RAAS colors
 - **Enhanced Visual Hierarchy**: Improved section organization with colored headers and descriptions
-- **Styled Configuration Section**: Reformatted setup guide with RAAP branding and clear organization
+- **Styled Configuration Section**: Reformatted setup guide with RAAS branding and clear organization
 - **Button Styling**: Added gradient backgrounds and hover effects to all buttons
 - **Form Improvements**: Better layout and visual organization for add/edit forms
 
