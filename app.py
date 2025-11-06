@@ -14,17 +14,184 @@ scheduler.start_scheduler()
 
 # Page configuration
 st.set_page_config(
-    page_title="Todo List with Reminders",
-    page_icon="✅",
-    layout="wide"
+    page_title="RAAP — Reminder as a Service",
+    page_icon="⚡",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-st.title("✅ Todo List with Reminders")
-st.markdown("Manage your tasks and receive email and SMS reminders before due dates!")
+# Custom CSS for RAAP branding and modern UI
+st.markdown("""
+<style>
+    /* RAAP Color Palette */
+    :root {
+        --raap-primary: #6C5CE7;
+        --raap-accent: #00D1B2;
+        --raap-surface: #0b0b0f;
+        --raap-card: #1a1a1f;
+        --raap-text: #f8f9fa;
+        --raap-high: #ff6b6b;
+        --raap-medium: #ffd93d;
+        --raap-low: #6bcf7f;
+    }
+    
+    /* Main app styling */
+    .stApp {
+        background: linear-gradient(135deg, #0b0b0f 0%, #1a1520 100%);
+    }
+    
+    /* Headers */
+    h1 {
+        color: var(--raap-primary) !important;
+        font-size: 2.5rem !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.02em;
+    }
+    
+    h2 {
+        color: var(--raap-accent) !important;
+        font-size: 1.5rem !important;
+        font-weight: 600 !important;
+    }
+    
+    h3 {
+        color: var(--raap-text) !important;
+        font-size: 1.2rem !important;
+    }
+    
+    /* Sidebar styling */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #1a1a1f 0%, #0b0b0f 100%);
+        border-right: 1px solid rgba(108, 92, 231, 0.2);
+    }
+    
+    /* Form inputs */
+    .stTextInput input, .stTextArea textarea, .stDateInput input, .stTimeInput input {
+        background-color: rgba(26, 26, 31, 0.8) !important;
+        border: 1px solid rgba(108, 92, 231, 0.3) !important;
+        border-radius: 12px !important;
+        color: var(--raap-text) !important;
+        padding: 0.75rem !important;
+    }
+    
+    .stTextInput input:focus, .stTextArea textarea:focus {
+        border-color: var(--raap-primary) !important;
+        box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.2) !important;
+    }
+    
+    /* Selectbox styling */
+    .stSelectbox div[data-baseweb="select"] {
+        background-color: rgba(26, 26, 31, 0.8) !important;
+        border-radius: 12px !important;
+    }
+    
+    /* Buttons */
+    .stButton button {
+        background: linear-gradient(135deg, var(--raap-primary) 0%, #5346c9 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 12px !important;
+        padding: 0.75rem 1.5rem !important;
+        font-weight: 600 !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3) !important;
+    }
+    
+    .stButton button:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 16px rgba(108, 92, 231, 0.4) !important;
+    }
+    
+    /* Download buttons */
+    .stDownloadButton button {
+        background: linear-gradient(135deg, var(--raap-accent) 0%, #00b89f 100%) !important;
+        color: white !important;
+        border-radius: 12px !important;
+        padding: 0.75rem 1.5rem !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Cards and containers */
+    .element-container {
+        background: rgba(26, 26, 31, 0.6);
+        border-radius: 16px;
+        padding: 1rem;
+    }
+    
+    /* Status badges */
+    .status-high {
+        background: var(--raap-high);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    
+    .status-medium {
+        background: var(--raap-medium);
+        color: #0b0b0f;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    
+    .status-low {
+        background: var(--raap-low);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    
+    /* Info boxes */
+    .stAlert {
+        background: rgba(26, 26, 31, 0.8) !important;
+        border-left: 4px solid var(--raap-accent) !important;
+        border-radius: 12px !important;
+    }
+    
+    /* Expander */
+    .streamlit-expanderHeader {
+        background: rgba(26, 26, 31, 0.8) !important;
+        border-radius: 12px !important;
+        color: var(--raap-text) !important;
+    }
+    
+    /* Dividers */
+    hr {
+        border-color: rgba(108, 92, 231, 0.2) !important;
+    }
+    
+    /* Caption text */
+    .stCaption {
+        color: rgba(248, 249, 250, 0.7) !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Header with branding
+st.markdown("""
+<div style="text-align: center; margin-bottom: 2rem;">
+    <h1 style="margin-bottom: 0.5rem;">⚡ RAAP</h1>
+    <p style="color: rgba(248, 249, 250, 0.7); font-size: 1.1rem; margin-top: 0;">
+        Reminder as a Service — Never miss what matters
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
 # Sidebar for adding/editing todos
 with st.sidebar:
-    st.header("Add New Todo")
+    st.markdown("""
+    <div style="text-align: center; padding: 1rem 0;">
+        <h2 style="margin: 0;">✨ Add Reminder</h2>
+        <p style="color: rgba(248, 249, 250, 0.6); font-size: 0.9rem; margin-top: 0.5rem;">
+            Never forget what matters
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
     
     with st.form("add_todo_form", clear_on_submit=True):
         title = st.text_input("Title *", placeholder="e.g., Finish project report")
@@ -186,16 +353,24 @@ def display_todo(todo):
             st.markdown(f"### {status_icon}")
         
         with col2:
-            # Priority indicator
-            priority_emoji = {"High": "🔴", "Medium": "🟡", "Low": "🟢"}.get(todo.get('priority', 'Medium'), "🟡")
-            title_text = f"{priority_emoji} "
+            # Priority badge with RAAP colors
+            priority = todo.get('priority', 'Medium')
+            priority_colors = {
+                "High": {"bg": "#ff6b6b", "text": "white"},
+                "Medium": {"bg": "#ffd93d", "text": "#0b0b0f"},
+                "Low": {"bg": "#6bcf7f", "text": "white"}
+            }
+            color = priority_colors.get(priority, priority_colors["Medium"])
+            
+            # Priority badge
+            priority_badge = f'<span style="background: {color["bg"]}; color: {color["text"]}; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-right: 0.5rem;">{priority.upper()}</span>'
             
             if todo['completed']:
-                title_text += f"~~**{todo['title']}**~~"
+                title_html = f'{priority_badge}<span style="text-decoration: line-through; color: rgba(248, 249, 250, 0.5);">{todo["title"]}</span>'
             else:
-                title_text += f"**{todo['title']}**"
+                title_html = f'{priority_badge}<span style="font-weight: 600; color: #f8f9fa;">{todo["title"]}</span>'
             
-            st.markdown(title_text)
+            st.markdown(title_html, unsafe_allow_html=True)
             
             if todo.get('category'):
                 st.caption(f"📂 {todo['category']}")
@@ -234,13 +409,27 @@ def display_todo(todo):
         st.divider()
 
 # Main content area
-st.header("Your Todos")
+st.markdown("""
+<div style="margin-bottom: 1.5rem;">
+    <h2 style="margin: 0;">📋 Your Reminders</h2>
+    <p style="color: rgba(248, 249, 250, 0.6); font-size: 0.95rem; margin-top: 0.5rem;">
+        Manage and track all your scheduled reminders
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
 # Get all todos
 todos = database.get_all_todos()
 
 if not todos:
-    st.info("No todos yet! Add your first task using the form on the left.")
+    st.markdown("""
+    <div style="text-align: center; padding: 3rem 1rem; background: rgba(26, 26, 31, 0.6); border-radius: 16px; border: 2px dashed rgba(108, 92, 231, 0.3);">
+        <h3 style="color: rgba(248, 249, 250, 0.8);">No reminders yet</h3>
+        <p style="color: rgba(248, 249, 250, 0.5); margin-top: 1rem;">
+            Get started by adding your first reminder using the form on the left ✨
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 else:
     # Filter options
     col1, col2, col3 = st.columns([2, 2, 3])
@@ -317,25 +506,45 @@ else:
     
     # Display overdue todos
     if overdue:
-        st.subheader("🚨 Overdue")
+        st.markdown("""
+        <div style="margin: 1.5rem 0 1rem 0;">
+            <h3 style="color: #ff6b6b; margin: 0;">🚨 Overdue</h3>
+            <p style="color: rgba(248, 249, 250, 0.5); font-size: 0.85rem; margin-top: 0.25rem;">Reminders that need attention</p>
+        </div>
+        """, unsafe_allow_html=True)
         for todo in overdue:
             display_todo(todo)
     
     # Display today's todos
     if today:
-        st.subheader("📅 Due Today")
+        st.markdown("""
+        <div style="margin: 1.5rem 0 1rem 0;">
+            <h3 style="color: #00D1B2; margin: 0;">📅 Due Today</h3>
+            <p style="color: rgba(248, 249, 250, 0.5); font-size: 0.85rem; margin-top: 0.25rem;">Reminders for today</p>
+        </div>
+        """, unsafe_allow_html=True)
         for todo in today:
             display_todo(todo)
     
     # Display upcoming todos
     if upcoming:
-        st.subheader("📆 Upcoming")
+        st.markdown("""
+        <div style="margin: 1.5rem 0 1rem 0;">
+            <h3 style="color: #6C5CE7; margin: 0;">📆 Upcoming</h3>
+            <p style="color: rgba(248, 249, 250, 0.5); font-size: 0.85rem; margin-top: 0.25rem;">Future reminders</p>
+        </div>
+        """, unsafe_allow_html=True)
         for todo in upcoming:
             display_todo(todo)
     
     # Display completed todos
     if completed and show_completed:
-        st.subheader("✅ Completed")
+        st.markdown("""
+        <div style="margin: 1.5rem 0 1rem 0;">
+            <h3 style="color: #6bcf7f; margin: 0;">✅ Completed</h3>
+            <p style="color: rgba(248, 249, 250, 0.5); font-size: 0.85rem; margin-top: 0.25rem;">Finished reminders</p>
+        </div>
+        """, unsafe_allow_html=True)
         for todo in completed:
             display_todo(todo)
 
@@ -345,7 +554,14 @@ if 'editing_todo' in st.session_state and st.session_state.editing_todo:
     todo = database.get_todo_by_id(todo_id)
     
     if todo:
-        st.header("Edit Todo")
+        st.markdown("""
+        <div style="margin-bottom: 1.5rem;">
+            <h2 style="margin: 0;">✏️ Edit Reminder</h2>
+            <p style="color: rgba(248, 249, 250, 0.6); font-size: 0.95rem; margin-top: 0.5rem;">
+                Update your reminder details
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
         
         # Handle both formats: 'T' separator and space separator
         due_date_str = todo['due_date'].replace(' ', 'T') if ' ' in todo['due_date'] else todo['due_date']
@@ -423,20 +639,34 @@ if 'editing_todo' in st.session_state and st.session_state.editing_todo:
                     st.rerun()
 
 # Configuration section
-with st.expander("⚙️ Reminder Configuration"):
+st.markdown("<br>", unsafe_allow_html=True)
+with st.expander("⚙️ Configuration & Setup Guide"):
     st.markdown("""
-    ### Email Configuration
-    To enable email reminders, set these environment variables:
-    - `SENDER_EMAIL`: Your email address
-    - `SENDER_PASSWORD`: Your email password or app-specific password
-    - `SMTP_SERVER`: SMTP server (default: smtp.gmail.com)
-    - `SMTP_PORT`: SMTP port (default: 587)
-    
-    ### SMS Configuration
-    To enable SMS reminders, set these environment variables:
-    - `TWILIO_ACCOUNT_SID`: Your Twilio Account SID
-    - `TWILIO_AUTH_TOKEN`: Your Twilio Auth Token
-    - `TWILIO_PHONE_NUMBER`: Your Twilio phone number
-    
-    Reminders are checked every hour. Each todo can have its own custom reminder interval (1 hour to 7 days before due date).
-    """)
+    <div style="padding: 1rem;">
+        <h3 style="color: #00D1B2; margin-top: 0;">📧 Email Notifications</h3>
+        <p style="color: rgba(248, 249, 250, 0.7); line-height: 1.6;">
+            To enable email reminders, configure these environment variables:
+        </p>
+        <ul style="color: rgba(248, 249, 250, 0.7); line-height: 1.8;">
+            <li><code>SENDER_EMAIL</code> — Your email address</li>
+            <li><code>SENDER_PASSWORD</code> — Email password or app-specific password</li>
+            <li><code>SMTP_SERVER</code> — SMTP server (default: smtp.gmail.com)</li>
+            <li><code>SMTP_PORT</code> — SMTP port (default: 587)</li>
+        </ul>
+        
+        <h3 style="color: #00D1B2; margin-top: 1.5rem;">📱 SMS Notifications</h3>
+        <p style="color: rgba(248, 249, 250, 0.7); line-height: 1.6;">
+            To enable SMS reminders via Twilio, configure:
+        </p>
+        <ul style="color: rgba(248, 249, 250, 0.7); line-height: 1.8;">
+            <li><code>TWILIO_ACCOUNT_SID</code> — Your Twilio Account SID</li>
+            <li><code>TWILIO_AUTH_TOKEN</code> — Your Twilio Auth Token</li>
+            <li><code>TWILIO_PHONE_NUMBER</code> — Your Twilio phone number</li>
+        </ul>
+        
+        <h3 style="color: #00D1B2; margin-top: 1.5rem;">⚡ How It Works</h3>
+        <p style="color: rgba(248, 249, 250, 0.7); line-height: 1.6;">
+            RAAP checks for upcoming reminders every hour. Each reminder can have a custom alert interval from 1 hour to 7 days before the due date. When it's time, you'll receive notifications via your preferred channels!
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
