@@ -198,11 +198,11 @@ if 'editing_todo' in st.session_state and st.session_state.editing_todo:
                     edit_due_datetime = datetime.combine(edit_due_date, edit_due_time)
                     database.update_todo(
                         todo_id=todo_id,
-                        title=edit_title,
-                        description=edit_description,
+                        title=edit_title or "",
+                        description=edit_description or "",
                         due_date=edit_due_datetime.isoformat(),
-                        email=edit_email,
-                        phone=edit_phone
+                        email=edit_email or "",
+                        phone=edit_phone or ""
                     )
                     del st.session_state.editing_todo
                     st.success("Todo updated!")

@@ -42,7 +42,7 @@ def add_todo(title: str, description: str, due_date: str, email: str = "", phone
     todo_id = cursor.lastrowid
     conn.commit()
     conn.close()
-    return todo_id
+    return todo_id if todo_id is not None else 0
 
 def get_all_todos() -> List[Dict]:
     """Get all todos from the database."""
