@@ -479,16 +479,13 @@ def display_todo(todo):
                 database.toggle_complete(todo['id'])
                 st.rerun()
             
-            col_edit, col_del = st.columns(2)
-            with col_edit:
-                if st.button("✏️", key=f"edit_{todo['id']}", help="Edit", use_container_width=True):
-                    st.session_state.editing_todo = todo['id']
-                    st.rerun()
+            if st.button("✏️ Edit", key=f"edit_{todo['id']}", help="Edit reminder", use_container_width=True):
+                st.session_state.editing_todo = todo['id']
+                st.rerun()
             
-            with col_del:
-                if st.button("🗑️", key=f"delete_{todo['id']}", help="Delete", use_container_width=True):
-                    database.delete_todo(todo['id'])
-                    st.rerun()
+            if st.button("🗑️ Delete", key=f"delete_{todo['id']}", help="Delete reminder", use_container_width=True):
+                database.delete_todo(todo['id'])
+                st.rerun()
         
         st.divider()
 
