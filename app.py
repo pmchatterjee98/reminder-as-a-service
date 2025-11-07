@@ -20,6 +20,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# PWA Meta Tags for iPhone installability
+st.markdown("""
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RAAS">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#6C5CE7">
+<link rel="apple-touch-icon" href="https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/26a1.png">
+<link rel="manifest" href="/manifest.json">
+""", unsafe_allow_html=True)
+
 # Custom CSS for RAAS branding and modern UI
 st.markdown("""
 <style>
@@ -116,6 +127,64 @@ st.markdown("""
         background: rgba(26, 26, 31, 0.6);
         border-radius: 16px;
         padding: 1rem;
+    }
+    
+    /* Mobile Optimization */
+    @media only screen and (max-width: 768px) {
+        /* Adjust layout for mobile */
+        .stApp {
+            padding: 0.5rem !important;
+        }
+        
+        /* Make headers smaller on mobile */
+        h1 {
+            font-size: 1.8rem !important;
+        }
+        
+        h2 {
+            font-size: 1.3rem !important;
+        }
+        
+        /* Improve form spacing on mobile */
+        .stTextInput input, .stTextArea textarea {
+            font-size: 16px !important; /* Prevents zoom on iOS */
+            padding: 0.6rem !important;
+        }
+        
+        /* Better button sizing for touch */
+        .stButton button {
+            padding: 0.875rem 1rem !important;
+            font-size: 0.95rem !important;
+            min-height: 44px; /* iOS touch target */
+        }
+        
+        /* Sidebar adjustments */
+        [data-testid="stSidebar"] {
+            width: 100% !important;
+        }
+        
+        /* Better table/todo list on mobile */
+        .element-container {
+            padding: 0.75rem !important;
+        }
+        
+        /* Priority badges more readable on mobile */
+        span[style*="padding: 0.25rem"] {
+            font-size: 0.7rem !important;
+            padding: 0.2rem 0.6rem !important;
+        }
+    }
+    
+    /* Smaller mobile devices (iPhone SE, etc) */
+    @media only screen and (max-width: 375px) {
+        h1 {
+            font-size: 1.5rem !important;
+        }
+        
+        .stButton button {
+            font-size: 0.85rem !important;
+            padding: 0.75rem 0.875rem !important;
+        }
     }
     
     /* Status badges */
