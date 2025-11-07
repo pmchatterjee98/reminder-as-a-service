@@ -1,0 +1,33 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY app.py .
+COPY database.py .
+COPY notifications.py .
+COPY scheduler.py .
+COPY .streamlit/ .streamlit/
+
+# Create non-root user for security
+RUN useradd -m -u 1000 appuser && chown -R appuser /app
+USER appuser
+
+# Expose Streamlit port
+EXPOSE 5000
+
+# Health check
+HEALTHCHECK CMD curl --fail http://localhost:5000/_stcore/health || exit 1
+
+# Run Streamlit on port 5000
+CMD ["streamlit", "run", "app.py", "--server.port", "5000", "--server.address", "0.0.0.0"]

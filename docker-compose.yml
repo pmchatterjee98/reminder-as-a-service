@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  raas-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: raas-api
+    ports:
+      - "8000:8000"
+    environment:
+      - SENDER_EMAIL=${SENDER_EMAIL}
+      - SENDER_PASSWORD=${SENDER_PASSWORD}
+      - SMTP_SERVER=${SMTP_SERVER:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
+    volumes:
+      - ./data:/app/data
+    networks:
+      - raas-network
+    restart: unless-stopped
+
+  raas-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    container_name: raas-app
+    ports:
+      - "5000:5000"
+    environment:
+      - SENDER_EMAIL=${SENDER_EMAIL}
+      - SENDER_PASSWORD=${SENDER_PASSWORD}
+      - SMTP_SERVER=${SMTP_SERVER:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
+    volumes:
+      - ./data:/app/data
+    networks:
+      - raas-network
+    depends_on:
+      - raas-api
+    restart: unless-stopped
+
+networks:
+  raas-network:
+    driver: bridge
+
+volumes:
+  data:
+    driver: local
