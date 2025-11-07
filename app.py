@@ -521,7 +521,7 @@ else:
         show_completed = st.checkbox("Show completed", value=True)
     
     # Get unique categories and priorities
-    categories = sorted(set([t.get('category') for t in todos if t.get('category')]))
+    categories = sorted([cat for cat in set(t.get('category') for t in todos) if cat])
     priorities = ["All", "High", "Medium", "Low"]
     
     with col2:
