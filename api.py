@@ -253,14 +253,11 @@ async def update_todo(todo_id: int, todo_update: TodoUpdate):
         
         # Update completion status if provided
         if 'completed' in update_data:
-            if update_data['completed']:
-                database.complete_todo(todo_id)
-            else:
-                # Uncomplete todo by resetting completed flag
-                database.conn = database.sqlite3.connect(database.DB_NAME)
-                database.conn.execute('UPDATE todos SET completed = 0 WHERE id = ?', (todo_id,))
-                database.conn.commit()
-                database.conn.close()
+            # Toggle to match desired state
+            current_completed = bool(existing_todo['completed'])
+            desired_completed = bool(update_data['completed'])
+            if current_completed != desired_completed:
+                database.toggle_complete(todo_id)
         
         updated_todo = database.get_todo_by_id(todo_id)
         return updated_todo
@@ -283,38 +280,21 @@ async def delete_todo(todo_id: int):
     database.delete_todo(todo_id)
     return {"message": f"Todo {todo_id} deleted successfully"}
 
-@app.post("/todos/{todo_id}/complete", response_model=Todo, tags=["todos"])
-async def complete_todo(todo_id: int):
+@app.post("/todos/{todo_id}/toggle-complete", response_model=Todo, tags=["todos"])
+async def toggle_todo_complete(todo_id: int):
     """
-    Mark a todo as complete
+    Toggle the completion status of a todo
     
-    - **todo_id**: The ID of the todo to mark as complete
-    """
-    existing_todo = database.get_todo_by_id(todo_id)
-    if not existing_todo:
-        raise HTTPException(status_code=404, detail=f"Todo with ID {todo_id} not found")
+    - **todo_id**: The ID of the todo to toggle
     
-    database.complete_todo(todo_id)
-    updated_todo = database.get_todo_by_id(todo_id)
-    return updated_todo
-
-@app.post("/todos/{todo_id}/uncomplete", response_model=Todo, tags=["todos"])
-async def uncomplete_todo(todo_id: int):
-    """
-    Mark a todo as incomplete
-    
-    - **todo_id**: The ID of the todo to mark as incomplete
+    If the todo is complete, it will be marked as incomplete.
+    If the todo is incomplete, it will be marked as complete.
     """
     existing_todo = database.get_todo_by_id(todo_id)
     if not existing_todo:
         raise HTTPException(status_code=404, detail=f"Todo with ID {todo_id} not found")
     
-    # Reset completed flag
-    conn = database.sqlite3.connect(database.DB_NAME)
-    conn.execute('UPDATE todos SET completed = 0 WHERE id = ?', (todo_id,))
-    conn.commit()
-    conn.close()
-    
+    database.toggle_complete(todo_id)
     updated_todo = database.get_todo_by_id(todo_id)
     return updated_todo
 
