@@ -134,18 +134,22 @@ The interface uses a sidebar form for adding/editing todos and the main area for
 
 ### Third-party Services
 
-**Email Delivery (SMTP)**
-- **Service**: Configurable SMTP server (default: Gmail)
-- **Configuration**: Requires `SENDER_EMAIL` and `SENDER_PASSWORD` environment variables
+**Email Delivery (Gmail via SMTP)**
+- **Service**: Gmail SMTP server
+- **Status**: ✅ Fully configured and operational
+- **Configuration**: Configured with `SENDER_EMAIL` and `SENDER_PASSWORD` (Gmail App Password) environment variables
 - **Port**: 587 (TLS)
 - **Purpose**: Sending email reminders to users
+- **Subject Format**: "⚡ RAAS Reminder: {task_title}"
+- **Body**: Professional formatted email with RAAS branding
 
 **SMS Delivery (Twilio)**
 - **Service**: Twilio API
-- **Status**: Fully implemented and ready to use
+- **Status**: ✅ Fully configured and operational
 - **Purpose**: Sending SMS reminders to users
-- **Configuration**: Requires `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_PHONE_NUMBER` environment variables
+- **Configuration**: Configured with `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_PHONE_NUMBER` environment variables
 - **Usage**: Optional - users can choose email-only, SMS-only, or both notification channels
+- **Message Format**: "⚡ RAAS Reminder\n\n📌 {task}\n⏰ Due: {date}\n\nNever miss what matters!"
 
 ### Python Packages
 
@@ -175,7 +179,16 @@ The interface uses a sidebar form for adding/editing todos and the main area for
 
 ## Recent Changes
 
-### November 7, 2025 - REST API Addition
+### November 7, 2025 - Latest Updates
+
+**Notification System Activation**
+- **Email Notifications**: Fully configured with Gmail SMTP using app password
+- **SMS Notifications**: Fully configured with Twilio API credentials
+- **RAAS Branding**: Updated email and SMS messages with professional RAAS branding
+- **Security**: All credentials stored securely as Replit Secrets
+- **Testing**: Created test_notifications.py script for manual testing
+
+**REST API Addition**
 - **REST API with Swagger**: Added comprehensive FastAPI-based REST API with automatic OpenAPI/Swagger documentation
 - **API Endpoints**: Full CRUD operations for todos (GET, POST, PUT, DELETE) plus statistics endpoint
 - **Interactive Documentation**: Swagger UI at `/docs` and ReDoc at `/redoc` for testing and documentation
