@@ -16,6 +16,7 @@ A comprehensive task management application with automated email, SMS, and Whats
 - 📥 **Export Options**: Export to CSV or PDF with timestamped filenames
 - 🎨 **Modern UI**: Dark-themed interface with custom RAAS branding
 - 🚀 **REST API**: Full FastAPI backend with automatic Swagger documentation
+- 📱 **Mobile Optimized**: Full iPhone/iPad support with PWA installability
 
 ---
 
@@ -136,13 +137,34 @@ Full REST API with automatic documentation:
 
 ---
 
+## 📱 Use on iPhone
+
+RAAS is fully optimized for mobile! Install it on your iPhone home screen:
+
+1. Open your published RAAS URL in **Safari** on iPhone
+2. Tap the **Share button** (square with arrow)
+3. Select **"Add to Home Screen"**
+4. Tap **"Add"**
+
+Now RAAS opens fullscreen like a native app! See [MOBILE_GUIDE.md](MOBILE_GUIDE.md) for full details.
+
+### Mobile Features:
+- ✅ Touch-optimized buttons (44px iOS standard)
+- ✅ Responsive layout for all iPhone sizes
+- ✅ No zoom on form inputs
+- ✅ Fullscreen app experience
+- ✅ Progressive Web App (PWA) support
+- ✅ Works offline for viewing reminders
+
+---
+
 ## 🎨 UI Preview
 
 - Modern dark theme with RAAS color palette
 - Priority badges (High/Medium/Low)
 - Days remaining indicators
 - Clean list view with action buttons
-- Responsive design
+- Fully responsive design (desktop + mobile)
 
 ---
 
