@@ -31,6 +31,32 @@ Preferred communication style: Simple, everyday language.
 
 The interface uses a sidebar form for adding/editing todos and the main area for displaying task lists. Layout is configured as "wide" to maximize screen real estate.
 
+### REST API Architecture
+**Framework: FastAPI with Automatic OpenAPI Documentation**
+- **Problem**: Need programmatic access to RAAS functionality for integrations and automation
+- **Solution**: FastAPI REST API with comprehensive endpoints for todo management
+- **Rationale**: FastAPI provides automatic Swagger/OpenAPI documentation, high performance, and modern async capabilities
+- **Pros**: Automatic API docs, data validation with Pydantic, fast performance, type safety
+- **Cons**: Requires additional server process
+
+**API Endpoints:**
+- **Base URL**: `http://localhost:8000` (development)
+- **Documentation**: `http://localhost:8000/docs` (Swagger UI)
+- **Alternative Docs**: `http://localhost:8000/redoc` (ReDoc)
+- **OpenAPI Schema**: `http://localhost:8000/openapi.json`
+
+**Available Endpoints:**
+- `GET /` - API information and service metadata
+- `GET /todos` - List all todos with optional filtering (category, priority, completed, limit)
+- `GET /todos/{id}` - Get a specific todo by ID
+- `POST /todos` - Create a new todo
+- `PUT /todos/{id}` - Update an existing todo
+- `DELETE /todos/{id}` - Delete a todo
+- `POST /todos/{id}/toggle-complete` - Toggle completion status
+- `GET /stats` - Get statistics about todos (totals, priorities, categories)
+
+**Authentication**: Currently open (add authentication in production)
+
 ### UI/UX Design System
 **RAAS Brand Identity**
 - **Branding**: ⚡ RAAS — Reminder as a Service
@@ -148,6 +174,15 @@ The interface uses a sidebar form for adding/editing todos and the main area for
 - `io`: In-memory file operations for exports
 
 ## Recent Changes
+
+### November 7, 2025 - REST API Addition
+- **REST API with Swagger**: Added comprehensive FastAPI-based REST API with automatic OpenAPI/Swagger documentation
+- **API Endpoints**: Full CRUD operations for todos (GET, POST, PUT, DELETE) plus statistics endpoint
+- **Interactive Documentation**: Swagger UI at `/docs` and ReDoc at `/redoc` for testing and documentation
+- **Data Validation**: Pydantic models for request/response validation with automatic schema generation
+- **Filtering Support**: Query parameters for filtering by category, priority, completion status, and limiting results
+- **CORS Enabled**: Cross-origin resource sharing configured for frontend integrations
+- **Dual Server Setup**: API runs on port 8000, Streamlit app on port 5000
 
 ### November 6, 2025 - Latest Update
 - **RAAS Rebranding**: Complete rebrand to "RAAS — Reminder as a Service" with new visual identity
