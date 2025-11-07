@@ -78,6 +78,7 @@ class TodoBase(BaseModel):
     due_date: str = Field(..., description="Due date in ISO format (YYYY-MM-DD HH:MM:SS)", example="2025-11-15 14:30:00")
     email: Optional[str] = Field(None, description="Email for notifications", example="user@example.com")
     phone: Optional[str] = Field(None, description="Phone number for SMS notifications", example="+1234567890")
+    whatsapp_phone: Optional[str] = Field(None, description="WhatsApp phone number for notifications", example="+1234567890")
     reminder_hours: int = Field(24, ge=1, le=168, description="Hours before due date to send reminder (1-168)", example=24)
     category: Optional[str] = Field(None, max_length=50, description="Category for organization", example="Work")
     priority: str = Field("Medium", description="Priority level: High, Medium, or Low", example="High")
@@ -204,6 +205,7 @@ async def create_todo(todo: TodoCreate):
             due_date=todo.due_date,
             email=todo.email or "",
             phone=todo.phone or "",
+            whatsapp_phone=todo.whatsapp_phone or "",
             reminder_hours=todo.reminder_hours,
             is_recurring=todo.is_recurring,
             recurrence_frequency=todo.recurrence_frequency,
@@ -243,6 +245,7 @@ async def update_todo(todo_id: int, todo_update: TodoUpdate):
             due_date=merged_data['due_date'],
             email=merged_data['email'] or "",
             phone=merged_data['phone'] or "",
+            whatsapp_phone=merged_data.get('whatsapp_phone') or "",
             reminder_hours=merged_data['reminder_hours'],
             is_recurring=bool(merged_data['is_recurring']),
             recurrence_frequency=merged_data.get('recurrence_frequency'),

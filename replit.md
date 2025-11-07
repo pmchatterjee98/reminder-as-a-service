@@ -2,18 +2,19 @@
 
 ## Overview
 
-**⚡ RAAS (Reminder as a Service)** is a comprehensive task management application built with Streamlit that allows users to create, organize, and track todos with automated email and SMS reminders. The application monitors upcoming tasks and sends notifications before due dates to help users stay on top of their responsibilities.
+**⚡ RAAS (Reminder as a Service)** is a comprehensive task management application built with Streamlit that allows users to create, organize, and track todos with automated email, SMS, and WhatsApp reminders. The application monitors upcoming tasks and sends notifications before due dates to help users stay on top of their responsibilities.
 
 **Tagline:** "Never miss what matters"
 
 **Key Features:**
 - **Task Management**: Create tasks with titles, descriptions, due dates/times, and contact information
-- **Smart Reminders**: Customizable reminder intervals (1 hour to 7 days before due date) via email and SMS
+- **Smart Reminders**: Customizable reminder intervals (1 hour to 7 days before due date) via email, SMS, and WhatsApp
 - **Recurring Tasks**: Automatic rescheduling of recurring tasks (daily, weekly, monthly, yearly)
 - **Organization**: Categories and priority levels (High/Medium/Low) with color-coded indicators
 - **Filtering**: Filter todos by category, priority, and completion status
 - **Export**: Export todo list to CSV or PDF format with timestamped filenames
 - **Modern UI**: Dark-themed interface with custom RAAS branding and color palette
+- **REST API**: Comprehensive FastAPI-based REST API with automatic OpenAPI/Swagger documentation
 
 ## User Preferences
 
@@ -123,12 +124,13 @@ The interface uses a sidebar form for adding/editing todos and the main area for
 ### Notification System
 **Multi-channel Delivery**
 - **Problem**: Users need reminders via different communication channels
-- **Solution**: Separate email and SMS notification functions with independent success tracking
+- **Solution**: Separate email, SMS, and WhatsApp notification functions with independent success tracking
 - **Email**: SMTP-based using Python's `smtplib` and `email.mime`
-- **SMS**: Twilio integration (implementation in progress)
-- **Rationale**: Flexibility for users to choose preferred notification method
-- **Configuration**: Environment variable-based configuration for credentials (SMTP_SERVER, SMTP_PORT, SENDER_EMAIL, SENDER_PASSWORD)
-- **Error Handling**: Graceful degradation - if one channel fails, the other can still succeed
+- **SMS**: Twilio integration with professional RAAS branding
+- **WhatsApp**: Twilio WhatsApp API integration with RAAS branding
+- **Rationale**: Flexibility for users to choose preferred notification method(s)
+- **Configuration**: Environment variable-based configuration for credentials (SMTP_SERVER, SMTP_PORT, SENDER_EMAIL, SENDER_PASSWORD, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER)
+- **Error Handling**: Graceful degradation - if one channel fails, the others can still succeed
 
 ## External Dependencies
 
@@ -148,8 +150,18 @@ The interface uses a sidebar form for adding/editing todos and the main area for
 - **Status**: ✅ Fully configured and operational
 - **Purpose**: Sending SMS reminders to users
 - **Configuration**: Configured with `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_PHONE_NUMBER` environment variables
-- **Usage**: Optional - users can choose email-only, SMS-only, or both notification channels
+- **Usage**: Optional - users can choose email, SMS, WhatsApp, or any combination of notification channels
 - **Message Format**: "⚡ RAAS Reminder\n\n📌 {task}\n⏰ Due: {date}\n\nNever miss what matters!"
+
+**WhatsApp Delivery (Twilio)**
+- **Service**: Twilio WhatsApp API
+- **Status**: ✅ Fully configured and operational
+- **Purpose**: Sending WhatsApp reminders to users
+- **Configuration**: Uses the same Twilio credentials as SMS (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`)
+- **Testing**: Requires joining Twilio's WhatsApp Sandbox - send "join <sandbox-code>" to whatsapp:+14155238886
+- **Usage**: Optional - users can choose any combination of email, SMS, and WhatsApp notifications
+- **Message Format**: "⚡ RAAS Reminder\n\n📌 {task}\n⏰ Due: {date}\n\nNever miss what matters!"
+- **Database Field**: `whatsapp_phone` column in todos table stores WhatsApp phone numbers
 
 ### Python Packages
 
@@ -180,6 +192,15 @@ The interface uses a sidebar form for adding/editing todos and the main area for
 ## Recent Changes
 
 ### November 7, 2025 - Latest Updates
+
+**WhatsApp Integration**
+- **WhatsApp Notifications**: Full integration with Twilio WhatsApp API for sending reminders
+- **Database Migration**: Added `whatsapp_phone` column to todos table with automatic migration
+- **UI Updates**: Added WhatsApp phone input fields to both add and edit forms in Streamlit app
+- **API Updates**: Updated REST API models and endpoints to support WhatsApp phone numbers
+- **Scheduler Integration**: Enhanced scheduler to send WhatsApp reminders alongside email and SMS
+- **Multi-channel Support**: Users can now choose any combination of email, SMS, and WhatsApp notifications
+- **Documentation**: Updated configuration guide with WhatsApp sandbox setup instructions
 
 **Notification System Activation**
 - **Email Notifications**: Fully configured with Gmail SMTP using app password

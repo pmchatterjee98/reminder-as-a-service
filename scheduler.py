@@ -24,6 +24,7 @@ def check_and_send_reminders():
         
         email_sent = False
         sms_sent = False
+        whatsapp_sent = False
         
         # Send email reminder if email is provided
         if todo.get('email'):
@@ -41,8 +42,16 @@ def check_and_send_reminders():
                 todo['due_date']
             )
         
+        # Send WhatsApp reminder if whatsapp_phone is provided
+        if todo.get('whatsapp_phone'):
+            whatsapp_sent = notifications.send_whatsapp_reminder(
+                todo['whatsapp_phone'],
+                todo['title'],
+                todo['due_date']
+            )
+        
         # Mark reminder as sent if at least one notification was sent
-        if email_sent or sms_sent:
+        if email_sent or sms_sent or whatsapp_sent:
             database.mark_reminder_sent(todo['id'])
             print(f"Reminder marked as sent for todo {todo['id']}")
 

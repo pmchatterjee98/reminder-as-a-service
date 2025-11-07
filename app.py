@@ -207,10 +207,11 @@ with st.sidebar:
             format_func=lambda x: f"{x} hour{'s' if x != 1 else ''}" if x < 24 else f"{x//24} day{'s' if x//24 != 1 else ''}"
         )
         email = st.text_input("Email", placeholder="your@email.com")
-        phone = st.text_input("Phone", placeholder="+1234567890")
+        phone = st.text_input("Phone (SMS)", placeholder="+1234567890")
+        whatsapp_phone = st.text_input("WhatsApp", placeholder="+1234567890")
         
         st.caption("📧 Email reminders require SMTP configuration")
-        st.caption("📱 SMS reminders require Twilio credentials")
+        st.caption("📱 SMS & WhatsApp require Twilio credentials")
         
         st.subheader("Organization")
         col_cat, col_pri = st.columns(2)
@@ -244,6 +245,7 @@ with st.sidebar:
                     due_date=due_datetime.isoformat(),
                     email=email,
                     phone=phone,
+                    whatsapp_phone=whatsapp_phone,
                     reminder_hours=reminder_hours,
                     is_recurring=is_recurring,
                     recurrence_frequency=recurrence_frequency,
@@ -585,7 +587,8 @@ if 'editing_todo' in st.session_state and st.session_state.editing_todo:
                 format_func=lambda x: f"{x} hour{'s' if x != 1 else ''}" if x < 24 else f"{x//24} day{'s' if x//24 != 1 else ''}"
             )
             edit_email = st.text_input("Email", value=todo['email'] or "")
-            edit_phone = st.text_input("Phone", value=todo['phone'] or "")
+            edit_phone = st.text_input("Phone (SMS)", value=todo['phone'] or "")
+            edit_whatsapp_phone = st.text_input("WhatsApp", value=todo.get('whatsapp_phone') or "")
             
             col_cat, col_pri = st.columns(2)
             with col_cat:
@@ -623,6 +626,7 @@ if 'editing_todo' in st.session_state and st.session_state.editing_todo:
                         due_date=edit_due_datetime.isoformat(),
                         email=edit_email or "",
                         phone=edit_phone or "",
+                        whatsapp_phone=edit_whatsapp_phone or "",
                         reminder_hours=edit_reminder_hours,
                         is_recurring=edit_is_recurring,
                         recurrence_frequency=edit_recurrence_frequency if edit_is_recurring else None,
@@ -655,15 +659,18 @@ with st.expander("⚙️ Configuration & Setup Guide"):
             <li><code>SMTP_PORT</code> — SMTP port (default: 587)</li>
         </ul>
         
-        <h3 style="color: #00D1B2; margin-top: 1.5rem;">📱 SMS Notifications</h3>
+        <h3 style="color: #00D1B2; margin-top: 1.5rem;">📱 SMS & WhatsApp Notifications</h3>
         <p style="color: rgba(248, 249, 250, 0.7); line-height: 1.6;">
-            To enable SMS reminders via Twilio, configure:
+            To enable SMS and WhatsApp reminders via Twilio, configure:
         </p>
         <ul style="color: rgba(248, 249, 250, 0.7); line-height: 1.8;">
             <li><code>TWILIO_ACCOUNT_SID</code> — Your Twilio Account SID</li>
             <li><code>TWILIO_AUTH_TOKEN</code> — Your Twilio Auth Token</li>
-            <li><code>TWILIO_PHONE_NUMBER</code> — Your Twilio phone number</li>
+            <li><code>TWILIO_PHONE_NUMBER</code> — Your Twilio phone number (for SMS)</li>
         </ul>
+        <p style="color: rgba(248, 249, 250, 0.7); line-height: 1.6; margin-top: 1rem;">
+            <strong>For WhatsApp:</strong> Use Twilio's WhatsApp Sandbox for testing. Join the sandbox by sending a WhatsApp message with the code "join &lt;your-sandbox-code&gt;" to +1 415 523 8886. Your sandbox code is shown in your Twilio Console.
+        </p>
         
         <h3 style="color: #00D1B2; margin-top: 1.5rem;">⚡ How It Works</h3>
         <p style="color: rgba(248, 249, 250, 0.7); line-height: 1.6;">

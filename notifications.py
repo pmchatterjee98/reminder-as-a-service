@@ -96,3 +96,48 @@ def send_sms_reminder(to_phone: str, todo_title: str, due_date: str) -> bool:
     except Exception as e:
         print(f"Failed to send SMS: {str(e)}")
         return False
+
+def send_whatsapp_reminder(to_whatsapp: str, todo_title: str, due_date: str) -> bool:
+    """Send a WhatsApp reminder for a todo item using Twilio WhatsApp API."""
+    if not to_whatsapp or to_whatsapp.strip() == "":
+        return False
+    
+    try:
+        from twilio.rest import Client
+    except ImportError:
+        print("Twilio not installed. Install with: pip install twilio")
+        return False
+    
+    # Twilio configuration from environment variables
+    account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+    auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+    
+    # For WhatsApp, we use Twilio's WhatsApp sandbox number
+    # In production, you would use your own WhatsApp Business number
+    from_whatsapp = "whatsapp:+14155238886"  # Twilio sandbox number
+    
+    if not all([account_sid, auth_token]):
+        print("Twilio credentials not configured. Set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN.")
+        return False
+    
+    try:
+        client = Client(account_sid, auth_token)
+        
+        # Format the phone number with whatsapp: prefix if not already present
+        if not to_whatsapp.startswith("whatsapp:"):
+            to_whatsapp = f"whatsapp:{to_whatsapp}"
+        
+        message_body = f"⚡ *RAAS Reminder*\n\n📌 *{todo_title}*\n⏰ Due: {due_date}\n\n_Never miss what matters!_"
+        
+        message = client.messages.create(
+            body=message_body,
+            from_=from_whatsapp,
+            to=to_whatsapp
+        )
+        
+        print(f"WhatsApp sent successfully to {to_whatsapp}. SID: {message.sid}")
+        return True
+    
+    except Exception as e:
+        print(f"Failed to send WhatsApp: {str(e)}")
+        return False
