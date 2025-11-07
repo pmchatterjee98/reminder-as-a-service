@@ -337,76 +337,89 @@ def display_todo(todo):
     due = datetime.fromisoformat(due_date_str)
     now = datetime.now()
     
-    # Determine status color
+    # Calculate days remaining
+    time_diff = due - now
+    days_remaining = time_diff.days
+    hours_remaining = time_diff.seconds // 3600
+    
+    # Create days remaining text
     if todo['completed']:
-        status_color = "green"
-        status_icon = "✅"
-    elif due < now:
-        status_color = "red"
-        status_icon = "🚨"
+        days_text = "✅ Completed"
+        days_color = "#6bcf7f"
+    elif days_remaining < 0:
+        days_abs = abs(days_remaining)
+        days_text = f"🚨 Overdue by {days_abs} day{'s' if days_abs != 1 else ''}"
+        days_color = "#ff6b6b"
+    elif days_remaining == 0:
+        if hours_remaining > 0:
+            days_text = f"⏰ Due today in {hours_remaining} hour{'s' if hours_remaining != 1 else ''}"
+            days_color = "#ffd93d"
+        else:
+            days_text = "⏰ Due today"
+            days_color = "#ffd93d"
+    elif days_remaining == 1:
+        days_text = "⏰ Due tomorrow"
+        days_color = "#ffd93d"
     else:
-        status_color = "blue"
-        status_icon = "📌"
+        days_text = f"📅 {days_remaining} days left"
+        days_color = "#00D1B2"
+    
+    # Priority badge with RAAS colors
+    priority = todo.get('priority', 'Medium')
+    priority_colors = {
+        "High": {"bg": "#ff6b6b", "text": "white"},
+        "Medium": {"bg": "#ffd93d", "text": "#0b0b0f"},
+        "Low": {"bg": "#6bcf7f", "text": "white"}
+    }
+    color = priority_colors.get(priority, priority_colors["Medium"])
     
     with st.container():
-        col1, col2, col3, col4 = st.columns([0.5, 3, 1.5, 1])
+        col1, col2, col3 = st.columns([4, 2, 1])
         
         with col1:
-            st.markdown(f"### {status_icon}")
-        
-        with col2:
-            # Priority badge with RAAS colors
-            priority = todo.get('priority', 'Medium')
-            priority_colors = {
-                "High": {"bg": "#ff6b6b", "text": "white"},
-                "Medium": {"bg": "#ffd93d", "text": "#0b0b0f"},
-                "Low": {"bg": "#6bcf7f", "text": "white"}
-            }
-            color = priority_colors.get(priority, priority_colors["Medium"])
-            
-            # Priority badge
-            priority_badge = f'<span style="background: {color["bg"]}; color: {color["text"]}; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-right: 0.5rem;">{priority.upper()}</span>'
+            # Priority badge + Title
+            priority_badge = f'<span style="background: {color["bg"]}; color: {color["text"]}; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-right: 0.75rem;">{priority.upper()}</span>'
             
             if todo['completed']:
-                title_html = f'{priority_badge}<span style="text-decoration: line-through; color: rgba(248, 249, 250, 0.5);">{todo["title"]}</span>'
+                title_html = f'{priority_badge}<span style="text-decoration: line-through; color: rgba(248, 249, 250, 0.5); font-size: 1.1rem;">{todo["title"]}</span>'
             else:
-                title_html = f'{priority_badge}<span style="font-weight: 600; color: #f8f9fa;">{todo["title"]}</span>'
+                title_html = f'{priority_badge}<span style="font-weight: 600; color: #f8f9fa; font-size: 1.1rem;">{todo["title"]}</span>'
             
             st.markdown(title_html, unsafe_allow_html=True)
             
+            # Category and description in smaller text
+            info_parts = []
             if todo.get('category'):
-                st.caption(f"📂 {todo['category']}")
-            
+                info_parts.append(f"📂 {todo['category']}")
             if todo['description']:
-                st.caption(todo['description'])
+                info_parts.append(todo['description'])
+            if info_parts:
+                st.caption(" • ".join(info_parts))
+        
+        with col2:
+            # Days remaining as prominent text
+            days_html = f'<div style="text-align: right; padding-top: 0.25rem;"><span style="color: {days_color}; font-weight: 600; font-size: 0.95rem;">{days_text}</span></div>'
+            st.markdown(days_html, unsafe_allow_html=True)
+            
+            # Show due date and time in smaller text
+            st.caption(f"Due: {due.strftime('%b %d, %Y at %I:%M %p')}")
         
         with col3:
-            st.caption(f"📅 Due: {due.strftime('%Y-%m-%d %H:%M')}")
-            
-            if todo.get('is_recurring'):
-                freq = todo.get('recurrence_frequency', 'days')
-                interval = todo.get('recurrence_interval', 1)
-                st.caption(f"🔁 Repeats every {interval} {freq}")
-            
-            if todo['email']:
-                st.caption(f"📧 {todo['email']}")
-            if todo['phone']:
-                st.caption(f"📱 {todo['phone']}")
-            if todo['reminder_sent']:
-                st.caption("🔔 Reminder sent")
-        
-        with col4:
-            if st.button("✓" if not todo['completed'] else "↶", key=f"complete_{todo['id']}", help="Toggle complete"):
+            # Action buttons stacked vertically for compact layout
+            if st.button("✓" if not todo['completed'] else "↶", key=f"complete_{todo['id']}", help="Toggle complete", use_container_width=True):
                 database.toggle_complete(todo['id'])
                 st.rerun()
             
-            if st.button("✏️", key=f"edit_{todo['id']}", help="Edit"):
-                st.session_state.editing_todo = todo['id']
-                st.rerun()
+            col_edit, col_del = st.columns(2)
+            with col_edit:
+                if st.button("✏️", key=f"edit_{todo['id']}", help="Edit", use_container_width=True):
+                    st.session_state.editing_todo = todo['id']
+                    st.rerun()
             
-            if st.button("🗑️", key=f"delete_{todo['id']}", help="Delete"):
-                database.delete_todo(todo['id'])
-                st.rerun()
+            with col_del:
+                if st.button("🗑️", key=f"delete_{todo['id']}", help="Delete", use_container_width=True):
+                    database.delete_todo(todo['id'])
+                    st.rerun()
         
         st.divider()
 
