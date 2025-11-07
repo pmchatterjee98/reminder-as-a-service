@@ -24,15 +24,24 @@ def send_email_reminder(to_email: str, todo_title: str, due_date: str) -> bool:
         message = MIMEMultipart()
         message["From"] = sender_email
         message["To"] = to_email
-        message["Subject"] = f"Reminder: {todo_title}"
+        message["Subject"] = f"⚡ RAAS Reminder: {todo_title}"
         
         body = f"""
-        This is a reminder for your todo item:
-        
-        Title: {todo_title}
-        Due Date: {due_date}
-        
-        Don't forget to complete this task!
+⚡ RAAS - Reminder as a Service
+Never miss what matters
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📌 REMINDER
+
+Task: {todo_title}
+Due: {due_date}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This is your scheduled reminder. Don't forget to complete this task!
+
+Manage your reminders at your RAAS dashboard.
         """
         
         message.attach(MIMEText(body, "plain"))
@@ -73,7 +82,7 @@ def send_sms_reminder(to_phone: str, todo_title: str, due_date: str) -> bool:
     try:
         client = Client(account_sid, auth_token)
         
-        message_body = f"Reminder: {todo_title}\nDue: {due_date}\n\nDon't forget to complete this task!"
+        message_body = f"⚡ RAAS Reminder\n\n📌 {todo_title}\n⏰ Due: {due_date}\n\nNever miss what matters!"
         
         message = client.messages.create(
             body=message_body,
