@@ -43,7 +43,7 @@ if st.session_state.logged_out:
     )
     
     # Always show login screen after logout
-    st.markdown(get_login_html("Sign in with your Replit account to access RAAS"), unsafe_allow_html=True)
+    st.components.v1.html(get_login_html("Sign in with your Replit account to access RAAS"), height=600, scrolling=False)
     st.stop()
 
 # Check if user is authenticated via Replit
@@ -54,7 +54,7 @@ if not auth_context.is_authenticated:
         page_icon="⚡",
         layout="centered"
     )
-    st.markdown(get_login_html("Sign in with your Replit account to access RAAS"), unsafe_allow_html=True)
+    st.components.v1.html(get_login_html("Sign in with your Replit account to access RAAS"), height=600, scrolling=False)
     st.stop()
 
 # User is authenticated - check if they exist in our database
