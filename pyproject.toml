@@ -5,6 +5,7 @@ description = "RAAS - Reminder as a Service: Never miss what matters"
 requires-python = ">=3.11"
 dependencies = [
     "apscheduler>=3.11.1",
+    "cryptography>=46.0.3",
     "fastapi>=0.121.0",
     "fpdf>=1.7.2",
     "fpdf2>=2.8.5",
