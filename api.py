@@ -3,12 +3,14 @@ RAAS API - Reminder as a Service REST API
 Provides RESTful endpoints with automatic Swagger/OpenAPI documentation
 """
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 import database
+import os
 
 # Initialize FastAPI app with metadata for Swagger
 app = FastAPI(
@@ -349,6 +351,130 @@ async def get_stats():
         "categories": categories
     }
 
+# --- Siri / Voice Assistant Integration ---
+
+# Optional API key for securing Siri endpoints
+API_KEY = os.getenv("SIRI_API_KEY")
+
+def verify_api_key(key: Optional[str] = Query(None, description="API key for authentication")):
+    """
+    Verify API key if SIRI_API_KEY environment variable is set.
+    If not set, endpoints are publicly accessible.
+    """
+    if API_KEY and key != API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing API key"
+        )
+    return True
+
+class SiriTasksResponse(BaseModel):
+    """Response model for Siri tasks endpoint"""
+    pending: List[str] = Field(..., description="List of pending task titles")
+    done: List[str] = Field(..., description="List of completed task titles")
+    total_pending: int = Field(..., description="Total number of pending tasks")
+    total_done: int = Field(..., description="Total number of completed tasks")
+
+@app.get("/api/siri/tasks", response_model=SiriTasksResponse, tags=["siri"])
+async def siri_get_tasks(authorized: bool = Depends(verify_api_key)):
+    """
+    Get tasks for Siri/voice assistants in simplified JSON format
+    
+    Returns pending and completed tasks as simple string lists, perfect for
+    voice assistant integrations.
+    
+    **Security**: If SIRI_API_KEY environment variable is set, you must provide
+    the key as a query parameter: `?key=YOUR_KEY`
+    
+    **Example**:
+    ```
+    curl 'https://your-app.replit.app/api/siri/tasks?key=YOUR_KEY'
+    ```
+    """
+    todos = database.get_all_todos()
+    
+    pending = [t['title'] for t in todos if not t.get('completed')]
+    done = [t['title'] for t in todos if t.get('completed')]
+    
+    return {
+        "pending": pending,
+        "done": done,
+        "total_pending": len(pending),
+        "total_done": len(done)
+    }
+
+@app.get("/api/siri/say", response_class=PlainTextResponse, tags=["siri"])
+async def siri_say_tasks(authorized: bool = Depends(verify_api_key)):
+    """
+    Get a spoken summary of pending tasks for Siri/voice assistants
+    
+    Returns a human-readable plain text sentence that Siri can speak aloud.
+    
+    **Rules**:
+    - No pending tasks → "You have no pending tasks."
+    - 1 task → "You have one task: Task Name."
+    - 2-5 tasks → "You have N tasks: task1; task2; task3."
+    - More than 5 tasks → Lists first 5, then "And M more."
+    
+    **Security**: If SIRI_API_KEY environment variable is set, you must provide
+    the key as a query parameter: `?key=YOUR_KEY`
+    
+    **Example**:
+    ```
+    curl 'https://your-app.replit.app/api/siri/say?key=YOUR_KEY'
+    ```
+    
+    **Siri Shortcut Setup**:
+    1. Open Shortcuts app → Create new shortcut
+    2. Add "Get Contents of URL" action with this endpoint
+    3. Add "Speak Text" action using the response
+    4. Add to Siri with phrase "Check my reminders"
+    """
+    todos = database.get_all_todos()
+    pending = [t['title'] for t in todos if not t.get('completed')]
+    
+    if not pending:
+        return "You have no pending tasks."
+    elif len(pending) == 1:
+        return f"You have one task: {pending[0]}."
+    else:
+        # Show first 5 tasks
+        first_five = pending[:5]
+        remainder = len(pending) - len(first_five)
+        
+        task_list = "; ".join(first_five)
+        response = f"You have {len(pending)} tasks: {task_list}."
+        
+        if remainder > 0:
+            response += f" And {remainder} more."
+        
+        return response
+
 if __name__ == "__main__":
     import uvicorn
+    print("\n" + "="*50)
+    print("⚡ RAAS API - Siri Integration Enabled")
+    print("="*50)
+    print("\n📱 Siri Endpoints:")
+    print("  JSON: GET /api/siri/tasks")
+    print("  SAY:  GET /api/siri/say")
+    
+    if API_KEY:
+        print(f"\n🔒 Security: API Key required (add ?key=YOUR_KEY)")
+        print(f"   Set via SIRI_API_KEY environment variable")
+    else:
+        print("\n🌐 Security: Public access (no API key required)")
+        print("   Set SIRI_API_KEY environment variable to enable authentication")
+    
+    print("\n🧪 Test with curl:")
+    if API_KEY:
+        print("  curl 'http://localhost:8000/api/siri/tasks?key=YOUR_KEY'")
+        print("  curl 'http://localhost:8000/api/siri/say?key=YOUR_KEY'")
+    else:
+        print("  curl 'http://localhost:8000/api/siri/tasks'")
+        print("  curl 'http://localhost:8000/api/siri/say'")
+    
+    print("\n📚 Documentation: http://localhost:8000/docs")
+    print("="*50 + "\n")
+    
     uvicorn.run(app, host="0.0.0.0", port=8000)

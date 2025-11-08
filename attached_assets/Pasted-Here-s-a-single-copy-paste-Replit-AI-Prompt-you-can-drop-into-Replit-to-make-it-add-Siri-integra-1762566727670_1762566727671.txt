@@ -1,0 +1,152 @@
+Here’s a single **copy-paste Replit AI Prompt** you can drop into Replit to make it add Siri integration to your RAAP app (Flask). It tells Replit exactly what to change/add, includes the **two endpoints** you need, optional security, and quick tests.
+
+---
+
+## ✅ Replit AI Prompt (paste everything below)
+
+**Project:** RAAP — Reminder as a Service (Flask, Python)
+**Context:** The app already has routes `/`, `/add`, `/done/<id>`, `/wallpaper.png` and a helper `load_tasks()` that returns Task objects with fields like `.text` and `.done`.
+
+**Goal:** Add Siri integration by implementing two read-only endpoints without breaking existing behavior:
+
+1. `GET /api/tasks` → returns JSON of pending and done tasks
+2. `GET /api/say` → returns `text/plain` sentence summarizing pending tasks (for Siri to speak)
+
+**Security:**
+Support an optional shared key via env var `API_KEY`.
+
+* If `API_KEY` is set, require the query param `?key=<API_KEY>` on both endpoints.
+* If `API_KEY` is **not** set, allow public read access.
+
+**Requirements & Constraints:**
+
+* Keep all existing routes and logic intact.
+* Reuse the existing `load_tasks()` function to read tasks.
+* No writes or side effects in the new endpoints.
+* Use `flask.jsonify` for JSON; for `/api/say` return `text/plain; charset=utf-8`.
+* Status codes: `200` on success, `401` on missing/incorrect key when `API_KEY` is set.
+* No new dependencies required.
+
+**Data shape for `/api/tasks`:**
+
+```json
+{
+  "pending": ["Pay rent", "Call mom"],
+  "done": ["Buy milk"]
+}
+```
+
+**Text rules for `/api/say`:**
+
+* No pending tasks → `You have no pending tasks.`
+* 1 task → `You have one task: <task>.`
+* 2–5 tasks → `You have N tasks: task1; task2; ...; taskN.`
+* More than 5 tasks → read first 5, then append `And M more.` (where M = remaining count).
+
+---
+
+### 🔧 Implementation: insert the following **near the other @app.route handlers** in `main.py`
+
+```python
+# --- Siri / Assistant API endpoints ---
+import os
+from flask import request, jsonify, Response
+
+API_KEY = os.getenv("API_KEY")
+
+def _check_key():
+    """Return True if access is allowed. If API_KEY is set, require ?key=..."""
+    if not API_KEY:
+        return True
+    return request.args.get("key") == API_KEY
+
+@app.route("/api/tasks")
+def api_tasks():
+    if not _check_key():
+        return jsonify({"error": "unauthorized"}), 401
+    tasks = load_tasks()
+    pending = [t.text for t in tasks if not t.done]
+    done = [t.text for t in tasks if t.done]
+    return jsonify({"pending": pending, "done": done})
+
+@app.route("/api/say")
+def api_say():
+    if not _check_key():
+        return Response("Unauthorized", status=401, mimetype="text/plain; charset=utf-8")
+
+    tasks = load_tasks()
+    pending = [t.text for t in tasks if not t.done]
+
+    if not pending:
+        text = "You have no pending tasks."
+    elif len(pending) == 1:
+        text = f"You have one task: {pending[0]}."
+    else:
+        first = pending[:5]
+        remainder = len(pending) - len(first)
+        listing = "; ".join(first)
+        text = f"You have {len(pending)} tasks: {listing}."
+        if remainder > 0:
+            text += f" And {remainder} more."
+
+    return Response(text, mimetype="text/plain; charset=utf-8")
+```
+
+---
+
+### 🧪 Add console help: print curl examples at startup (optional but helpful)
+
+Right after `app.run(...)` is configured (or just before), print examples using your actual Replit URL if available. If you can’t detect it, just print generic examples:
+
+```python
+print("=== RAAP Siri endpoints ===")
+print("JSON:  curl 'https://<YOUR-REPL-URL>/api/tasks'")
+print("SAY:   curl 'https://<YOUR-REPL-URL>/api/say'")
+print("With key:")
+print("JSON:  curl 'https://<YOUR-REPL-URL>/api/tasks?key=MYSECRET'")
+print("SAY:   curl 'https://<YOUR-REPL-URL>/api/say?key=MYSECRET'")
+```
+
+---
+
+### 🔒 Replit Secrets (optional but recommended)
+
+Add in **Tools → Secrets**:
+
+* `API_KEY` → a long random string (e.g., `raap_6c0f8b2e2d...`)
+
+Then call your endpoints with `?key=<that value>`.
+
+---
+
+### 📱 Siri Shortcut steps (include these in the final output for me)
+
+1. Open **Shortcuts** on iPhone → **+** → name it **“Check RAAP”**.
+2. Add action **“Get Contents of URL”**:
+
+   * URL: `https://<YOUR-REPL-URL>/api/say`
+   * If using a key: `https://<YOUR-REPL-URL>/api/say?key=MYSECRET`
+   * Method: **GET**
+3. Add action **“Speak Text”** → use the output from step 2.
+4. (Optional) **Add to Siri** → record phrase: “Check RAAP”.
+
+## Now saying “**Hey Siri, check RAAP**” will read your tasks aloud.
+
+**Acceptance Criteria:**
+
+* `/api/tasks` returns 200 with the JSON structure described (or 401 if key required and missing/wrong).
+* `/api/say` returns 200 with a human-readable sentence (or 401 if key required and missing/wrong).
+* No regressions to existing routes.
+* No new Python packages added.
+
+**Deliverables:**
+
+* Committed changes to `main.py` implementing both endpoints.
+* Console prints with curl examples (optional).
+* A short note reminding how to set `API_KEY` and how to build the Siri Shortcut.
+
+> After you implement this, please run the app and show me the exact URLs to hit in curl.
+
+---
+
+**End of Prompt**
