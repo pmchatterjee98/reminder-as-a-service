@@ -150,6 +150,11 @@ if st.session_state.show_onboarding:
 
 # User is fully authenticated and onboarded
 current_user_id = st.session_state.user_id
+
+# Always refresh user data from database to ensure we have the latest profile info
+# This ensures that changes to name, username, etc. are immediately reflected
+import database_auth
+st.session_state.user_data = database_auth.get_user_by_id(current_user_id)
 current_user = st.session_state.user_data
 
 # Page configuration
