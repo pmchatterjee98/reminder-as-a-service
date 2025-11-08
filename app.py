@@ -358,12 +358,16 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Header with branding
-st.markdown("""
+# Header with branding and personalized greeting
+user_name = auth_context.user_name or "there"
+st.markdown(f"""
 <div style="text-align: center; margin-bottom: 2rem;">
     <h1 style="margin-bottom: 0.5rem;">⚡ RAAS</h1>
     <p style="color: rgba(248, 249, 250, 0.7); font-size: 1.1rem; margin-top: 0;">
         Reminder as a Service — Never miss what matters
+    </p>
+    <p style="color: #00D1B2; font-size: 1.2rem; margin-top: 1rem; font-weight: 500;">
+        👋 Hello, {user_name}!
     </p>
 </div>
 """, unsafe_allow_html=True)

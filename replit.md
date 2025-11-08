@@ -57,6 +57,8 @@ Preferred communication style: Simple, everyday language.
 - **Advanced Filtering:** Users can filter tasks by category, priority, and completion status.
 - **Data Export:** Functionality to export todo lists to CSV and PDF formats.
 - **Inline Editing:** Edit forms appear directly at the task location.
+- **Personalized Experience:** Dashboard greets users by their Replit username for a professional, personalized feel.
+- **Smart Contact Management:** Contact information pulled from user profile - no duplicate entry needed when creating reminders.
 - **Horizontal Action Buttons:** Complete, Edit, and Delete buttons displayed below each task.
 
 **Mobile Support:**
