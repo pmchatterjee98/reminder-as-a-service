@@ -1,21 +1,133 @@
 import streamlit as st
 from datetime import datetime, timedelta
 import database
+import database_multi_user
+import database_auth
 import scheduler
 import csv
 import io
 from fpdf import FPDF
+from auth_replit import ReplitAuthContext, auth_manager, get_login_html
 
-# Initialize database
+# Initialize databases
 database.init_db()
-
-# Delete completed tasks on app refresh
-deleted_count = database.delete_completed_tasks()
-if deleted_count > 0:
-    print(f"Removed {deleted_count} completed task(s) on refresh")
+database_auth.init_auth_db()
 
 # Start the reminder scheduler
 scheduler.start_scheduler()
+
+#=============================================================================
+# AUTHENTICATION LAYER
+#=============================================================================
+
+# Get Replit Auth context
+auth_context = ReplitAuthContext.from_streamlit()
+
+# Initialize session state
+if 'user_id' not in st.session_state:
+    st.session_state.user_id = None
+if 'user_data' not in st.session_state:
+    st.session_state.user_data = None
+if 'show_onboarding' not in st.session_state:
+    st.session_state.show_onboarding = False
+
+# Check if user is authenticated via Replit
+if not auth_context.is_authenticated:
+    # Show login page
+    st.set_page_config(
+        page_title="RAAS — Sign In",
+        page_icon="⚡",
+        layout="centered"
+    )
+    st.markdown(get_login_html("Sign in with your Replit account to access RAAS"), unsafe_allow_html=True)
+    st.stop()
+
+# User is authenticated - check if they exist in our database
+if st.session_state.user_id is None:
+    # Try to get or create user
+    user = auth_manager.get_or_create_user(auth_context)
+    
+    if user is None:
+        # New user needs onboarding
+        st.session_state.show_onboarding = True
+    else:
+        # Existing user
+        st.session_state.user_id = user['id']
+        st.session_state.user_data = user
+        
+        # Delete completed tasks for this user on app refresh
+        deleted_count = database_multi_user.delete_completed_tasks_for_user(user['id'])
+        if deleted_count > 0:
+            print(f"Removed {deleted_count} completed task(s) for user {user['id']} on refresh")
+
+# Show onboarding if needed
+if st.session_state.show_onboarding:
+    st.set_page_config(
+        page_title="Welcome to RAAS",
+        page_icon="⚡",
+        layout="centered"
+    )
+    
+    st.markdown("""
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="color: #6C5CE7; margin-bottom: 0.5rem;">⚡ Welcome to RAAS</h1>
+        <p style="color: rgba(248, 249, 250, 0.7); font-size: 1.1rem;">
+            Reminder as a Service — Never miss what matters
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.info(f"👋 Hello, **{auth_context.user_name}**! Let's set up your account.")
+    
+    with st.form("onboarding_form"):
+        st.subheader("📧 Contact Information")
+        st.write("We'll use this information to send you reminders.")
+        
+        email = st.text_input("Email Address *", placeholder="your@email.com")
+        phone = st.text_input("Phone (for SMS)", placeholder="+1234567890")
+        whatsapp = st.text_input("WhatsApp", placeholder="+1234567890")
+        
+        st.subheader("🔔 Notification Preferences")
+        st.write("Choose how you'd like to receive reminders:")
+        
+        consent_email = st.checkbox("Send me email reminders", value=True)
+        consent_sms = st.checkbox("Send me SMS reminders", value=False)
+        consent_whatsapp = st.checkbox("Send me WhatsApp reminders", value=False)
+        
+        st.caption("You can change these preferences anytime in your profile.")
+        
+        submitted = st.form_submit_button("Complete Setup", use_container_width=True)
+        
+        if submitted:
+            if email:
+                # Create user with contact info and consents
+                user_id = database_auth.create_user(
+                    email=email,
+                    auth_provider='replit',
+                    auth_provider_id=auth_context.replit_user_id,
+                    phone=phone if phone else None,
+                    whatsapp=whatsapp if whatsapp else None,
+                    consent_email=consent_email,
+                    consent_sms=consent_sms,
+                    consent_whatsapp=consent_whatsapp
+                )
+                
+                if user_id:
+                    st.session_state.user_id = user_id
+                    st.session_state.user_data = database_auth.get_user_by_id(user_id)
+                    st.session_state.show_onboarding = False
+                    st.success("✅ Account created successfully!")
+                    st.rerun()
+                else:
+                    st.error("❌ Failed to create account. Please try again or contact support.")
+            else:
+                st.error("⚠️ Please provide your email address.")
+    
+    st.stop()
+
+# User is fully authenticated and onboarded
+current_user_id = st.session_state.user_id
+current_user = st.session_state.user_data
 
 # Page configuration
 st.set_page_config(
@@ -309,7 +421,8 @@ with st.sidebar:
             if title and due_date:
                 # Combine date and time
                 due_datetime = datetime.combine(due_date, due_time)
-                database.add_todo(
+                database_multi_user.add_todo_for_user(
+                    user_id=current_user_id,
                     title=title,
                     description=description,
                     due_date=due_datetime.isoformat(),
@@ -323,10 +436,10 @@ with st.sidebar:
                     category=category if category else None,
                     priority=priority
                 )
-                st.success("Todo added successfully!")
+                st.success("✅ Reminder added successfully!")
                 st.rerun()
             else:
-                st.error("Please fill in the required fields (Title and Due Date)")
+                st.error("⚠️ Please fill in the required fields (Title and Due Date)")
 
 def export_to_csv(todos):
     """Export todos to CSV format."""
@@ -457,7 +570,8 @@ def display_todo(todo):
             with col1:
                 if st.form_submit_button("💾 Save Changes", use_container_width=True):
                     edit_due_datetime = datetime.combine(edit_due_date, edit_due_time)
-                    database.update_todo(
+                    database_multi_user.update_todo_for_user(
+                        user_id=current_user_id,
                         todo_id=todo['id'],
                         title=edit_title or "",
                         description=edit_description or "",
@@ -473,7 +587,7 @@ def display_todo(todo):
                         priority=edit_priority
                     )
                     del st.session_state.editing_todo
-                    st.success("Reminder updated!")
+                    st.success("✅ Reminder updated!")
                     st.rerun()
             
             with col2:
@@ -562,7 +676,7 @@ def display_todo(todo):
         
         with btn_col1:
             if st.button("✓ Done" if not todo['completed'] else "↶ Undo", key=f"complete_{todo['id']}", help="Toggle complete", use_container_width=True):
-                database.toggle_complete(todo['id'])
+                database_multi_user.toggle_complete_for_user(todo['id'], current_user_id)
                 st.rerun()
         
         with btn_col2:
@@ -572,7 +686,7 @@ def display_todo(todo):
         
         with btn_col3:
             if st.button("🗑️ Delete", key=f"delete_{todo['id']}", help="Delete reminder", use_container_width=True):
-                database.delete_todo(todo['id'])
+                database_multi_user.delete_todo_for_user(todo['id'], current_user_id)
                 st.rerun()
         
         st.divider()
@@ -587,8 +701,8 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Get all todos
-todos = database.get_all_todos()
+# Get all todos for current user
+todos = database_multi_user.get_todos_for_user(current_user_id)
 
 if not todos:
     st.markdown("""
