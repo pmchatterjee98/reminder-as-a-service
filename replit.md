@@ -66,11 +66,13 @@ Preferred communication style: Simple, everyday language.
 - **12-Hour Time Format:** Intuitive time input using Hour (1-12), Minute (00-59), and AM/PM selectors with exact minute precision.
 - **Horizontal Action Buttons:** Complete, Edit, and Delete buttons displayed below each task with proper spacing to prevent text wrapping.
 - **Editable Profile Settings:** Users can update their name, username, email, phone, and WhatsApp information directly from the settings panel. All changes are validated, encrypted, and persisted to the database with comprehensive error handling.
+- **Mobile Browser Alarms:** Real-time browser notifications for tasks due within 24 hours on mobile and desktop. Users enable via Settings → Mobile Alarms. Notifications appear 1 hour before task due time (or immediately if less than 1 hour remaining) with vibration alerts, priority indicators, and task details. Works while app is open in a browser tab. Automatically re-schedules on tab focus.
 
 **Mobile Support:**
 - Optimized for iPhone and iPad with a touch-friendly interface.
 - Installable as a Progressive Web App (PWA) with a manifest.json and Apple-specific meta tags.
 - Responsive CSS with media queries for all screen sizes.
+- Browser notification support for in-app mobile alarms.
 
 **Deployment:**
 - Supports Replit Publishing (recommended), Docker Containerization, and CI/CD with GitHub Actions.
