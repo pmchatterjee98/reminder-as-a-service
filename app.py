@@ -35,26 +35,33 @@ if 'logged_out' not in st.session_state:
 
 # Check if user intentionally logged out
 if st.session_state.logged_out:
-    # Show logged out page
+    # Show logged out page with sign-in option
     st.set_page_config(
         page_title="RAAS — Logged Out",
         page_icon="⚡",
         layout="centered"
     )
-    st.markdown("""
-    <div style="text-align: center; margin-top: 3rem;">
-        <h1 style="color: #6C5CE7; margin-bottom: 1rem;">👋 You've been logged out</h1>
-        <p style="color: rgba(248, 249, 250, 0.7); font-size: 1.1rem;">
-            Thanks for using RAAS!
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
     
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if st.button("🔐 Sign In Again", use_container_width=True, type="primary"):
-            st.session_state.logged_out = False
-            st.rerun()
+    # If user is authenticated, clear session and show login screen
+    if auth_context.is_authenticated:
+        st.markdown("""
+        <div style="text-align: center; margin-top: 3rem;">
+            <h1 style="color: #6C5CE7; margin-bottom: 1rem;">👋 You've been logged out</h1>
+            <p style="color: rgba(248, 249, 250, 0.7); font-size: 1.1rem;">
+                Thanks for using RAAS!
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("🔐 Sign In Again", use_container_width=True, type="primary"):
+                st.session_state.logged_out = False
+                st.rerun()
+    else:
+        # User not authenticated - show login screen
+        st.markdown(get_login_html("Sign in with your Replit account to access RAAS"), unsafe_allow_html=True)
+    
     st.stop()
 
 # Check if user is authenticated via Replit
@@ -414,8 +421,8 @@ with col_header2:
     """, unsafe_allow_html=True)
 
 with col_header3:
-    # Three-dots menu in top right
-    with st.popover("⋮", use_container_width=True):
+    # Account menu in top right
+    with st.popover("Account", use_container_width=True):
         # Initialize menu view state
         if 'menu_view' not in st.session_state:
             st.session_state.menu_view = 'main'
@@ -1016,7 +1023,7 @@ else:
     col_exp1, col_exp2, col_exp3 = st.columns([1, 1, 4])
     
     with col_exp1:
-        if st.button("📥 Export to CSV", use_container_width=True):
+        if st.button("📥 CSV", use_container_width=True):
             csv_data = export_to_csv(todos)
             st.download_button(
                 label="Download CSV",
@@ -1027,7 +1034,7 @@ else:
             )
     
     with col_exp2:
-        if st.button("📄 Export to PDF", use_container_width=True):
+        if st.button("📄 PDF", use_container_width=True):
             pdf_data = export_to_pdf(todos)
             st.download_button(
                 label="Download PDF",
