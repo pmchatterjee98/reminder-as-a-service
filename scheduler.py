@@ -23,7 +23,8 @@ def check_and_send_reminders():
     
     # Process reminders for each user
     for user in all_users:
-        user_id = user['auth_provider_id']
+        # Use internal RAAS user ID (not auth_provider_id) since that's what's stored in todos.user_id
+        user_id = user['id']
         
         # Get upcoming todos for this user (tasks with <= 24 hours remaining)
         upcoming_todos = database_multi_user.get_upcoming_todos_for_user(user_id)

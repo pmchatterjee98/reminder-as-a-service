@@ -36,7 +36,11 @@ Preferred communication style: Simple, everyday language.
 **REST API Architecture:**
 - Implemented with **FastAPI** for programmatic access, providing high performance and automatic OpenAPI/Swagger documentation.
 - **Endpoints:** CRUD operations for todos, statistics, and toggling completion status.
-- **Authentication:** Currently open (planned for production).
+- **Authentication:** Layered security model:
+  1. **Mandatory API Key** (RAAS_API_KEY): Required by default, prevents unauthorized access
+  2. **Replit Auth Headers**: X-Replit-User-Id + X-Replit-User-Name (trustworthy within Replit infrastructure)
+  3. **Database Verification**: Ensures user exists and completed onboarding
+- **Security Model**: Designed for internal/Replit deployment where headers are authenticated by Replit's reverse proxy. For external deployments, implement signed-token authentication (HMAC/JWT) in addition to API key.
 
 **Backend Architecture:**
 - Monolithic Python application structure with modular components for database, notifications, and scheduling.

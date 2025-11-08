@@ -131,16 +131,16 @@ def get_current_user(request: Request, api_authenticated: bool = Depends(verify_
     3. Consider adding rate limiting for additional security
     
     Returns:
-        user_id: The authenticated user's ID
+        user_id: The authenticated user's internal RAAS ID (not auth_provider_id)
         
     Raises:
         HTTPException: If user is not authenticated
     """
-    user_id = request.headers.get("X-Replit-User-Id")
+    auth_provider_id = request.headers.get("X-Replit-User-Id")
     user_name = request.headers.get("X-Replit-User-Name")
     
     # Require both headers for consistency (prevents partial spoofing)
-    if not user_id or not user_name:
+    if not auth_provider_id or not user_name:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication required. Missing Replit Auth headers.",
@@ -148,14 +148,16 @@ def get_current_user(request: Request, api_authenticated: bool = Depends(verify_
         )
     
     # Verify user exists in database (prevents access before onboarding)
-    user = database_auth.get_user_by_auth_id(user_id)
+    user = database_auth.get_user_by_auth_id(auth_provider_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User not found. Please complete onboarding in the Streamlit app first."
         )
     
-    return user_id
+    # CRITICAL: Return internal RAAS user ID, not auth_provider_id
+    # Todos are stored with user['id'] (internal UUID), not auth_provider_id
+    return user['id']
 
 # Pydantic Models for request/response validation
 
