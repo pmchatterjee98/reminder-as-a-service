@@ -526,7 +526,8 @@ def display_todo(todo):
     color = priority_colors.get(priority, priority_colors["Medium"])
     
     with st.container():
-        col1, col2, col3 = st.columns([4, 2, 1])
+        # Task information row
+        col1, col2 = st.columns([2, 1])
         
         with col1:
             # Priority badge + Title
@@ -556,16 +557,20 @@ def display_todo(todo):
             # Show due date and time in smaller text
             st.caption(f"Due: {due.strftime('%b %d, %Y at %I:%M %p')}")
         
-        with col3:
-            # Action buttons stacked vertically for compact layout
-            if st.button("✓" if not todo['completed'] else "↶", key=f"complete_{todo['id']}", help="Toggle complete", use_container_width=True):
+        # Action buttons row - displayed horizontally below task
+        btn_col1, btn_col2, btn_col3, btn_col4 = st.columns([1, 1, 1, 3])
+        
+        with btn_col1:
+            if st.button("✓ Done" if not todo['completed'] else "↶ Undo", key=f"complete_{todo['id']}", help="Toggle complete", use_container_width=True):
                 database.toggle_complete(todo['id'])
                 st.rerun()
-            
+        
+        with btn_col2:
             if st.button("✏️ Edit", key=f"edit_{todo['id']}", help="Edit reminder", use_container_width=True):
                 st.session_state.editing_todo = todo['id']
                 st.rerun()
-            
+        
+        with btn_col3:
             if st.button("🗑️ Delete", key=f"delete_{todo['id']}", help="Delete reminder", use_container_width=True):
                 database.delete_todo(todo['id'])
                 st.rerun()

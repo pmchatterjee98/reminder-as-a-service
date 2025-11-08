@@ -2,7 +2,7 @@
 
 ## Overview
 
-RAAS has comprehensive unit tests covering all major functionality with **66 passing tests** across database operations, notifications, API endpoints, and scheduler functionality.
+RAAS has comprehensive unit tests covering all major functionality with **74 passing tests** across database operations, notifications, API endpoints, and scheduler functionality.
 
 ---
 
@@ -45,7 +45,7 @@ pytest --cov=. --cov-report=html
 
 | File | Tests | Coverage |
 |------|-------|----------|
-| `test_database.py` | 25 tests | Database CRUD operations, recurring tasks, filtering |
+| `test_database.py` | 33 tests | Database CRUD operations, recurring tasks, filtering, automatic 24hr reminders, completed task deletion |
 | `test_notifications.py` | 14 tests | Email, SMS, WhatsApp notifications with mocking |
 | `test_api.py` | 23 tests | All REST API endpoints including Siri integration |
 | `test_scheduler.py` | 4 tests | Background scheduler and reminder checking |
@@ -57,7 +57,9 @@ pytest --cov=. --cov-report=html
 - **Toggle Complete**: Mark tasks complete/incomplete, recurring task rescheduling
 - **Filtering**: Category, priority, completion status
 - **Recurring Tasks**: Daily, weekly, monthly, yearly recurrence
-- **Reminders**: Upcoming todos, reminder hours, mark reminder sent
+- **Automatic 24hr Reminders**: Upcoming todos within 24 hours, edge cases (exactly 24hrs, beyond 24hrs), multiple tasks
+- **Completed Task Deletion**: Delete completed tasks, preserve incomplete tasks, handle empty database
+- **Reminder Tracking**: Mark reminder sent, prevent duplicate reminders
 
 #### Notifications ✅
 - **Email (SMTP)**: Success, errors, formatting, credentials validation
@@ -78,8 +80,8 @@ pytest --cov=. --cov-report=html
 - **API Key Security**: Siri endpoints with optional API key protection
 
 #### Scheduler ✅
-- **Check and Send**: Find upcoming todos and send reminders
-- **Filtering**: Skip completed, skip already sent, respect reminder_hours
+- **Check and Send**: Find upcoming todos within 24 hours and send reminders automatically
+- **Filtering**: Skip completed, skip already sent, only include tasks within 24hr window
 - **Start/Stop**: Scheduler lifecycle management
 
 ---
@@ -195,11 +197,26 @@ rm test_*.db
 
 ## Test Metrics
 
-- **Total Tests**: 66
-- **Passing**: 66 (100%)
+- **Total Tests**: 74
+- **Passing**: 74 (100%)
 - **Failing**: 0
 - **Test Execution Time**: ~7-8 seconds
 - **Coverage**: Database (100%), API (100%), Notifications (95%), Scheduler (90%)
+
+## Recent Test Additions
+
+**UX Improvements & Auto-Reminders** (November 2025):
+- Added 8 new tests for automatic 24-hour reminder system:
+  - `test_get_upcoming_todos_within_24_hours`: Verifies tasks due in 12 hours are included
+  - `test_get_upcoming_todos_beyond_24_hours`: Verifies tasks due in 25 hours are excluded
+  - `test_get_upcoming_todos_exactly_24_hours`: Verifies edge case at exactly 24 hours
+  - `test_get_upcoming_todos_multiple_within_window`: Verifies multiple tasks handled correctly
+  
+- Added 4 new tests for completed task deletion:
+  - `test_delete_completed_tasks_none_completed`: Handles empty deletion
+  - `test_delete_completed_tasks_some_completed`: Partial deletion
+  - `test_delete_completed_tasks_all_completed`: Full deletion
+  - `test_delete_completed_tasks_preserves_incomplete`: Verifies incomplete tasks preserved
 
 ---
 

@@ -45,11 +45,14 @@ Preferred communication style: Simple, everyday language.
 - **Notification System:** Supports multi-channel delivery via **SMTP (Email)**, **Twilio (SMS)**, and **Twilio (WhatsApp)**, with environment variable-based configuration for credentials.
 
 **Feature Specifications:**
-- **Customizable Reminder Intervals:** Options from 1 hour to 7 days before the due date.
+- **Automatic 24-Hour Reminders:** All tasks within 24 hours of their due date automatically trigger reminders via email, SMS, and/or WhatsApp (no manual configuration needed).
+- **Auto-Cleanup on Refresh:** Completed tasks are automatically deleted when the app refreshes, keeping the interface clean and focused on active reminders.
 - **Recurring Task Management:** Automatic rescheduling based on daily, weekly, monthly, or yearly frequencies.
 - **Categorization and Prioritization:** Tasks can be assigned categories and priority levels (High, Medium, Low).
 - **Advanced Filtering:** Users can filter tasks by category, priority, and completion status.
 - **Data Export:** Functionality to export todo lists to CSV and PDF formats with timestamped filenames.
+- **Inline Editing:** Edit forms appear directly at the task location for intuitive updates.
+- **Horizontal Action Buttons:** Complete, Edit, and Delete buttons displayed below each task for easy access.
 
 ## External Dependencies
 
@@ -105,8 +108,8 @@ See `DEPLOYMENT.md` for detailed instructions on all deployment options.
 ## Testing
 
 **Comprehensive Unit Testing:**
-- **66 unit tests** covering all major functionality across 4 test suites
-- **Test Coverage**: Database (25 tests), Notifications (14 tests), API (23 tests), Scheduler (4 tests)
+- **74 unit tests** covering all major functionality across 4 test suites
+- **Test Coverage**: Database (33 tests), Notifications (14 tests), API (23 tests), Scheduler (4 tests)
 - **Mocking Strategy**: All external services (SMTP, Twilio) properly mocked for reliable, fast tests
 - **Test Isolation**: Each test suite uses isolated temporary databases
 - **CI/CD Integration**: GitHub Actions workflow for automated testing on push/pull requests
@@ -126,6 +129,14 @@ pytest --cov=.           # With coverage report
 ```
 
 ## Recent Changes
+
+**UX Improvements & Auto-Reminders** (November 2025)
+- Automatic 24-hour reminder system: all tasks within 24 hours of due date get reminders automatically
+- Auto-cleanup: completed tasks are deleted on app refresh to keep interface clean
+- Horizontal button layout: Complete, Edit, Delete buttons now displayed below each task
+- Improved button labels: "✓ Done" / "↶ Undo" instead of cryptic symbols
+- Added 8 new unit tests for automatic reminders and completed task deletion (74 total tests)
+- Updated UI to remove manual reminder interval selector (automatic 24hr system)
 
 **Comprehensive Unit Testing** (November 2025)
 - Created 66 unit tests covering database, notifications, API, and scheduler functionality
