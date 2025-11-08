@@ -679,9 +679,18 @@ with col_header3:
                         # Show which fields were updated
                         fields_str = ", ".join(updated_fields)
                         st.success(f"✅ Successfully updated: {fields_str}")
+                        
+                        # Use st.balloons for visual feedback
+                        st.balloons()
+                        
+                        # Set flag to auto-return to dashboard on next interaction
+                        st.session_state.profile_updated = True
+                        st.info("↩️ Returning to dashboard...")
+                        
                         # Small delay to show success message
                         import time
-                        time.sleep(1.5)
+                        time.sleep(2)
+                        
                         # Return to dashboard
                         st.session_state.menu_view = 'main'
                         st.rerun()
@@ -949,9 +958,16 @@ with col_header3:
                     st.success(f"✅ Successfully updated: {fields_str}")
                     # Refresh user data to reflect changes
                     st.session_state.user_data = get_user_by_id(st.session_state.user_id)
+                    
+                    # Use st.balloons for visual feedback
+                    st.balloons()
+                    
+                    st.info("↩️ Returning to dashboard...")
+                    
                     # Small delay to show success message
                     import time
-                    time.sleep(1.5)
+                    time.sleep(2)
+                    
                     # Return to dashboard (close popover by setting menu view to main)
                     st.session_state.menu_view = 'main'
                     st.rerun()
