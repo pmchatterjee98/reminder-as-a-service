@@ -556,6 +556,83 @@ with col_header3:
             
             st.divider()
             
+            # Mobile Browser Notifications Section
+            st.write("**📱 Mobile Alarms**")
+            st.caption("Get instant browser notifications on your phone for tasks due within 24 hours")
+            
+            notification_enable_html = """
+            <script>
+            function enableNotifications() {
+                if (!('Notification' in window)) {
+                    alert('Your browser does not support notifications');
+                    return;
+                }
+                
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        // Show a test notification
+                        new Notification('⚡ RAAS Notifications Enabled!', {
+                            body: 'You will now receive mobile alarms for tasks due within 24 hours',
+                            icon: './app/static/icon-192.png',
+                            badge: './app/static/icon-72.png',
+                            vibrate: [200, 100, 200]
+                        });
+                        
+                        // Update UI
+                        document.getElementById('notification-status').innerHTML = 
+                            '<div style="padding: 0.5rem; background: rgba(107, 207, 127, 0.2); border-radius: 8px; color: #6bcf7f; font-size: 0.9rem;">✅ Mobile alarms enabled</div>';
+                    } else if (permission === 'denied') {
+                        alert('Notifications blocked. Please enable them in your browser settings.');
+                    }
+                });
+            }
+            
+            // Check current permission status
+            window.addEventListener('DOMContentLoaded', () => {
+                if ('Notification' in window) {
+                    const status = document.getElementById('notification-status');
+                    if (Notification.permission === 'granted') {
+                        status.innerHTML = 
+                            '<div style="padding: 0.5rem; background: rgba(107, 207, 127, 0.2); border-radius: 8px; color: #6bcf7f; font-size: 0.9rem;">✅ Mobile alarms enabled</div>';
+                    } else if (Notification.permission === 'denied') {
+                        status.innerHTML = 
+                            '<div style="padding: 0.5rem; background: rgba(255, 107, 107, 0.2); border-radius: 8px; color: #ff6b6b; font-size: 0.9rem;">❌ Blocked - Enable in browser settings</div>';
+                    } else {
+                        status.innerHTML = 
+                            '<div style="padding: 0.5rem; background: rgba(255, 217, 61, 0.2); border-radius: 8px; color: #ffd93d; font-size: 0.9rem;">⚠️ Not enabled - Click button below</div>';
+                    }
+                }
+            });
+            </script>
+            
+            <div id="notification-status" style="margin-bottom: 0.75rem;">
+                <div style="padding: 0.5rem; background: rgba(255, 217, 61, 0.2); border-radius: 8px; color: #ffd93d; font-size: 0.9rem;">⚠️ Checking status...</div>
+            </div>
+            
+            <button onclick="enableNotifications()" style="
+                width: 100%;
+                padding: 0.75rem;
+                background: linear-gradient(135deg, #6C5CE7 0%, #5a4bd4 100%);
+                color: white;
+                border: none;
+                border-radius: 12px;
+                font-size: 1rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(108, 92, 231, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                🔔 Enable Mobile Alarms
+            </button>
+            
+            <p style="color: rgba(248, 249, 250, 0.5); font-size: 0.8rem; margin-top: 0.5rem;">
+                💡 When enabled, you'll get browser notifications on your phone for tasks due soon, even when the app is closed.
+            </p>
+            """
+            
+            st.components.v1.html(notification_enable_html, height=200)
+            
+            st.divider()
+            
             # Save button
             if st.button("💾 Save Settings", use_container_width=True, type="primary"):
                 from database_auth import update_user_consent, update_user_contact_info, update_user_profile, get_user_by_id
@@ -1058,6 +1135,47 @@ st.markdown("""
 
 # Get all todos for current user
 todos = database_multi_user.get_todos_for_user(current_user_id)
+
+# Inject Mobile Notification System
+import json
+todos_json = json.dumps([{
+    'id': str(todo['id']),
+    'title': todo['title'],
+    'description': todo.get('description', ''),
+    'due_date': todo['due_date'],
+    'priority': todo.get('priority', 'Medium'),
+    'completed': todo['completed']
+} for todo in todos])
+
+notification_html = f"""
+<script src="./app/static/notifications.js"></script>
+<script>
+// Initialize notifications when page loads
+(function() {{
+    const tasks = {todos_json};
+    
+    // Wait for raasNotifications to be ready
+    function initializeNotifications() {{
+        if (window.raasNotifications) {{
+            // Check and schedule notifications for tasks < 24 hours
+            window.raasNotifications.checkAndScheduleTasks(tasks);
+        }} else {{
+            // Retry if not loaded yet
+            setTimeout(initializeNotifications, 100);
+        }}
+    }}
+    
+    // Start initialization
+    if (document.readyState === 'loading') {{
+        document.addEventListener('DOMContentLoaded', initializeNotifications);
+    }} else {{
+        initializeNotifications();
+    }}
+}})();
+</script>
+"""
+
+st.components.v1.html(notification_html, height=0)
 
 if not todos:
     st.markdown("""
