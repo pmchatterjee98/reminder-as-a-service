@@ -237,3 +237,20 @@ def mark_reminder_sent(todo_id: int):
     
     conn.commit()
     conn.close()
+
+def delete_completed_tasks() -> int:
+    """Delete all completed tasks from the database. Returns the number of tasks deleted."""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    
+    # Count completed tasks before deleting
+    cursor.execute('SELECT COUNT(*) FROM todos WHERE completed = 1')
+    count = cursor.fetchone()[0]
+    
+    # Delete completed tasks
+    cursor.execute('DELETE FROM todos WHERE completed = 1')
+    
+    conn.commit()
+    conn.close()
+    
+    return count

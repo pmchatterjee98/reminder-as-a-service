@@ -9,6 +9,11 @@ from fpdf import FPDF
 # Initialize database
 database.init_db()
 
+# Delete completed tasks on app refresh
+deleted_count = database.delete_completed_tasks()
+if deleted_count > 0:
+    print(f"Removed {deleted_count} completed task(s) on refresh")
+
 # Start the reminder scheduler
 scheduler.start_scheduler()
 
