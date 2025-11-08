@@ -193,7 +193,7 @@ def delete_todo(todo_id: int):
     conn.close()
 
 def get_upcoming_todos() -> List[Dict]:
-    """Get todos that need reminders sent based on their individual reminder_hours setting."""
+    """Get todos that need reminders sent (automatically sends for tasks with <= 24 hours remaining)."""
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -202,7 +202,6 @@ def get_upcoming_todos() -> List[Dict]:
     now_str = now.strftime('%Y-%m-%d %H:%M:%S')
     
     # Get all incomplete todos that haven't had reminders sent
-    # We'll filter by individual reminder_hours in Python since SQLite doesn't support datetime arithmetic well
     cursor.execute('''
         SELECT * FROM todos
         WHERE completed = 0
@@ -219,12 +218,11 @@ def get_upcoming_todos() -> List[Dict]:
         due_date_str = todo['due_date'].replace(' ', 'T') if ' ' in todo['due_date'] else todo['due_date']
         due_date = datetime.fromisoformat(due_date_str)
         
-        # Calculate when reminder should be sent
-        reminder_hours = todo.get('reminder_hours', 24)
+        # Calculate hours until due
         time_until_due = (due_date - now).total_seconds() / 3600  # hours
         
-        # Send reminder if we're within the reminder window
-        if 0 < time_until_due <= reminder_hours:
+        # Automatically send reminder for tasks with <= 24 hours remaining
+        if 0 < time_until_due <= 24:
             todos.append(todo)
     
     conn.close()

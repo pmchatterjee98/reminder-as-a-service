@@ -269,12 +269,8 @@ with st.sidebar:
         due_time = st.time_input("Due Time *", value=datetime.now().time())
         
         st.subheader("Reminder Settings")
-        reminder_hours = st.selectbox(
-            "Send reminder before due date",
-            options=[1, 2, 6, 12, 24, 48, 72, 168],
-            index=4,
-            format_func=lambda x: f"{x} hour{'s' if x != 1 else ''}" if x < 24 else f"{x//24} day{'s' if x//24 != 1 else ''}"
-        )
+        st.info("⚡ Auto-reminders sent for all tasks within 24 hours of due date!")
+        
         email = st.text_input("Email", placeholder="your@email.com")
         phone = st.text_input("Phone (SMS)", placeholder="+1234567890")
         whatsapp_phone = st.text_input("WhatsApp", placeholder="+1234567890")
@@ -315,7 +311,7 @@ with st.sidebar:
                     email=email,
                     phone=phone,
                     whatsapp_phone=whatsapp_phone,
-                    reminder_hours=reminder_hours,
+                    reminder_hours=24,  # Auto-reminder set to 24 hours
                     is_recurring=is_recurring,
                     recurrence_frequency=recurrence_frequency,
                     recurrence_interval=recurrence_interval,
@@ -421,16 +417,8 @@ def display_todo(todo):
             edit_due_date = st.date_input("Due Date", value=due_datetime.date())
             edit_due_time = st.time_input("Due Time", value=due_datetime.time())
             
-            current_reminder_hours = todo.get('reminder_hours', 24)
-            reminder_options = [1, 2, 6, 12, 24, 48, 72, 168]
-            default_index = reminder_options.index(current_reminder_hours) if current_reminder_hours in reminder_options else 4
+            st.caption("⚡ Auto-reminders sent when task is within 24 hours of due date")
             
-            edit_reminder_hours = st.selectbox(
-                "Send reminder before due date",
-                options=reminder_options,
-                index=default_index,
-                format_func=lambda x: f"{x} hour{'s' if x != 1 else ''}" if x < 24 else f"{x//24} day{'s' if x//24 != 1 else ''}"
-            )
             edit_email = st.text_input("Email", value=todo['email'] or "")
             edit_phone = st.text_input("Phone (SMS)", value=todo['phone'] or "")
             edit_whatsapp_phone = st.text_input("WhatsApp", value=todo.get('whatsapp_phone') or "")
@@ -472,7 +460,7 @@ def display_todo(todo):
                         email=edit_email or "",
                         phone=edit_phone or "",
                         whatsapp_phone=edit_whatsapp_phone or "",
-                        reminder_hours=edit_reminder_hours,
+                        reminder_hours=24,  # Auto-reminder set to 24 hours
                         is_recurring=edit_is_recurring,
                         recurrence_frequency=edit_recurrence_frequency if edit_is_recurring else None,
                         recurrence_interval=edit_recurrence_interval if edit_is_recurring else None,
@@ -800,7 +788,7 @@ with st.expander("⚙️ Configuration & Setup Guide"):
         
         <h3 style="color: #00D1B2; margin-top: 1.5rem;">⚡ How It Works</h3>
         <p style="color: rgba(248, 249, 250, 0.7); line-height: 1.6;">
-            RAAS checks for upcoming reminders every hour. Each reminder can have a custom alert interval from 1 hour to 7 days before the due date. When it's time, you'll receive notifications via your preferred channels!
+            RAAS checks for upcoming reminders every hour. <strong>Automatic reminders are sent for ALL tasks within 24 hours of their due date.</strong> When it's time, you'll receive notifications via your preferred channels (email, SMS, and/or WhatsApp)!
         </p>
     </div>
     """, unsafe_allow_html=True)

@@ -7,17 +7,17 @@ from datetime import datetime
 scheduler = BackgroundScheduler()
 
 def check_and_send_reminders():
-    """Check for upcoming todos and send reminders."""
+    """Check for upcoming todos and send reminders (automatically sends for tasks <= 24 hours)."""
     print(f"[{datetime.now()}] Checking for upcoming todos...")
     
-    # Get todos that need reminders based on their individual reminder_hours setting
+    # Get todos that need reminders (tasks with <= 24 hours remaining)
     upcoming_todos = database.get_upcoming_todos()
     
     if not upcoming_todos:
         print("No upcoming todos requiring reminders.")
         return
     
-    print(f"Found {len(upcoming_todos)} todos requiring reminders.")
+    print(f"Found {len(upcoming_todos)} todos requiring reminders (within 24 hours).")
     
     for todo in upcoming_todos:
         print(f"Processing reminder for: {todo['title']}")
