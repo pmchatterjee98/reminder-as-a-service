@@ -35,33 +35,15 @@ if 'logged_out' not in st.session_state:
 
 # Check if user intentionally logged out
 if st.session_state.logged_out:
-    # Show logged out page with sign-in option
+    # Show login screen
     st.set_page_config(
-        page_title="RAAS — Logged Out",
+        page_title="RAAS — Sign In",
         page_icon="⚡",
         layout="centered"
     )
     
-    # If user is authenticated, clear session and show login screen
-    if auth_context.is_authenticated:
-        st.markdown("""
-        <div style="text-align: center; margin-top: 3rem;">
-            <h1 style="color: #6C5CE7; margin-bottom: 1rem;">👋 You've been logged out</h1>
-            <p style="color: rgba(248, 249, 250, 0.7); font-size: 1.1rem;">
-                Thanks for using RAAS!
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            if st.button("🔐 Sign In Again", use_container_width=True, type="primary"):
-                st.session_state.logged_out = False
-                st.rerun()
-    else:
-        # User not authenticated - show login screen
-        st.markdown(get_login_html("Sign in with your Replit account to access RAAS"), unsafe_allow_html=True)
-    
+    # Always show login screen after logout
+    st.markdown(get_login_html("Sign in with your Replit account to access RAAS"), unsafe_allow_html=True)
     st.stop()
 
 # Check if user is authenticated via Replit
