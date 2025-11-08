@@ -32,6 +32,8 @@ if 'show_onboarding' not in st.session_state:
     st.session_state.show_onboarding = False
 if 'logged_out' not in st.session_state:
     st.session_state.logged_out = False
+if 'logout_username' not in st.session_state:
+    st.session_state.logout_username = None
 
 # Check if user intentionally logged out
 if st.session_state.logged_out:
@@ -42,8 +44,13 @@ if st.session_state.logged_out:
         layout="centered"
     )
     
-    # Always show login screen after logout
-    st.components.v1.html(get_login_html("Sign in with your Replit account to access RAAS"), height=600, scrolling=False)
+    # Show login screen with username if available
+    if st.session_state.logout_username:
+        login_message = f"You've been logged out. Sign in as <strong>{st.session_state.logout_username}</strong> to continue using RAAS"
+    else:
+        login_message = "Sign in with your Replit account to access RAAS"
+    
+    st.components.v1.html(get_login_html(login_message), height=600, scrolling=False)
     st.stop()
 
 # Check if user is authenticated via Replit
@@ -436,6 +443,12 @@ with col_header3:
             
             # Logout button
             if st.button("🚪 Logout", use_container_width=True, type="primary"):
+                # Store username before clearing user data
+                if st.session_state.user_data:
+                    username = st.session_state.user_data.get('username') or st.session_state.user_data.get('name') or auth_context.user_name
+                    st.session_state.logout_username = username
+                
+                # Clear session
                 st.session_state.logged_out = True
                 st.session_state.user_id = None
                 st.session_state.user_data = None
@@ -588,9 +601,19 @@ with col_header3:
                             '<div style="padding: 0.5rem; background: rgba(107, 207, 127, 0.2); border-radius: 8px; color: #6bcf7f; font-size: 0.9rem;">✅ Mobile alarms enabled</div>';
                         
                         // CRITICAL: Schedule notifications immediately after permission grant
-                        if (window.raasScheduleNotifications) {
-                            window.raasScheduleNotifications();
+                        // Use a small delay to ensure the scheduling function is loaded
+                        function trySchedule(attempts = 0) {
+                            if (window.raasScheduleNotifications) {
+                                window.raasScheduleNotifications();
+                                console.log('RAAS: Notifications scheduled after permission grant');
+                            } else if (attempts < 10) {
+                                // Retry after 100ms, up to 10 times (1 second total)
+                                setTimeout(() => trySchedule(attempts + 1), 100);
+                            } else {
+                                console.warn('RAAS: Scheduling function not found after permission grant');
+                            }
                         }
+                        trySchedule();
                     } else if (permission === 'denied') {
                         alert('Notifications blocked. Please enable them in your browser settings.');
                     }

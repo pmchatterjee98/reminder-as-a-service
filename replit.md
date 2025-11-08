@@ -50,7 +50,7 @@ Preferred communication style: Simple, everyday language.
 - **Contact Data Security:** Email/phone/WhatsApp encrypted with Fernet; email also hashed with SHA-256.
 - **Onboarding Flow:** First-time users complete profile setup (name, username, contact info) and consent preferences.
 - **User Profile System:** Each user has a unique username and display name, stored in encrypted database.
-- **Logout Flow:** Clicking logout immediately shows the Replit Auth login screen. Since RAAS uses Replit Auth, signing in again will immediately restore your session if you're still authenticated with Replit.
+- **Logout Flow:** Clicking logout displays the Replit Auth login screen with the username of the logged-out account shown (e.g., "Sign in as username to continue"). This helps users identify which account to sign in with. Since RAAS uses Replit Auth, signing in again will immediately restore your session if you're still authenticated with Replit.
 
 **Feature Specifications:**
 - **Automatic 24-Hour Reminders:** All tasks within 24 hours of their due date automatically trigger reminders.
