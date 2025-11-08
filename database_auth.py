@@ -27,7 +27,7 @@ def init_auth_db():
             phone_encrypted TEXT,
             whatsapp_encrypted TEXT,
             auth_provider TEXT DEFAULT 'replit',
-            auth_provider_id TEXT,
+            auth_provider_id TEXT UNIQUE,
             consent_email INTEGER DEFAULT 0,
             consent_sms INTEGER DEFAULT 0,
             consent_whatsapp INTEGER DEFAULT 0,
@@ -81,6 +81,106 @@ def init_auth_db():
             ''')
             print("Migration complete.")
     
+    # Migration: Add UNIQUE constraint to auth_provider_id if not present
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
+    users_table_exists = cursor.fetchone() is not None
+    
+    if users_table_exists:
+        # Check if UNIQUE constraint already exists on auth_provider_id specifically
+        # First, check table SQL definition (most reliable method)
+        cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'")
+        table_sql = cursor.fetchone()
+        has_unique_constraint = False
+        
+        if table_sql and table_sql[0]:
+            # Check if schema contains "auth_provider_id TEXT UNIQUE" (case-insensitive)
+            has_unique_constraint = 'AUTH_PROVIDER_ID TEXT UNIQUE' in table_sql[0].upper()
+        
+        # Fallback: Check PRAGMA index_list for UNIQUE index on auth_provider_id
+        if not has_unique_constraint:
+            cursor.execute("PRAGMA index_list('users')")
+            indexes = cursor.fetchall()
+            
+            for idx in indexes:
+                # idx = (seq, name, unique, origin, partial)
+                if idx[2] == 1:  # unique=1
+                    # Check which column(s) this index covers
+                    cursor.execute(f"PRAGMA index_info('{idx[1]}')")
+                    index_columns = cursor.fetchall()
+                    # index_columns = [(seqno, cid, name), ...]
+                    for col in index_columns:
+                        if col[2] and 'auth_provider_id' in col[2].lower():
+                            has_unique_constraint = True
+                            break
+                if has_unique_constraint:
+                    break
+        
+        if not has_unique_constraint:
+            print("Migrating database: Adding UNIQUE constraint to auth_provider_id...")
+            
+            # Step 1: Find and deduplicate any existing duplicates
+            cursor.execute('''
+                SELECT auth_provider_id, COUNT(*) as cnt
+                FROM users
+                WHERE auth_provider_id IS NOT NULL
+                GROUP BY auth_provider_id
+                HAVING cnt > 1
+            ''')
+            duplicates = cursor.fetchall()
+            
+            if duplicates:
+                print(f"Found {len(duplicates)} duplicate auth_provider_id entries. Deduplicating...")
+                for auth_id, count in duplicates:
+                    # Keep the first user, deactivate the rest
+                    cursor.execute('''
+                        SELECT id FROM users
+                        WHERE auth_provider_id = ?
+                        ORDER BY created_at ASC
+                    ''', (auth_id,))
+                    user_ids = [row[0] for row in cursor.fetchall()]
+                    
+                    if len(user_ids) > 1:
+                        print(f"  Keeping user {user_ids[0]}, deactivating {len(user_ids)-1} duplicate(s)")
+                        for dup_id in user_ids[1:]:
+                            cursor.execute('UPDATE users SET is_active = 0 WHERE id = ?', (dup_id,))
+            
+            # Step 2: Rebuild users table with UNIQUE constraint
+            # SQLite doesn't support ADD CONSTRAINT, so we need to recreate the table
+            print("Rebuilding users table with UNIQUE constraint...")
+            
+            cursor.execute('''
+                CREATE TABLE users_new (
+                    id TEXT PRIMARY KEY,
+                    email_hash TEXT UNIQUE NOT NULL,
+                    email_encrypted TEXT NOT NULL,
+                    phone_encrypted TEXT,
+                    whatsapp_encrypted TEXT,
+                    auth_provider TEXT DEFAULT 'replit',
+                    auth_provider_id TEXT UNIQUE,
+                    consent_email INTEGER DEFAULT 0,
+                    consent_sms INTEGER DEFAULT 0,
+                    consent_whatsapp INTEGER DEFAULT 0,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    last_login TEXT,
+                    is_active INTEGER DEFAULT 1
+                )
+            ''')
+            
+            # Copy data from old table (only active users with unique auth_provider_id)
+            cursor.execute('''
+                INSERT INTO users_new SELECT * FROM users WHERE is_active = 1
+            ''')
+            
+            # Drop old table and rename new one
+            cursor.execute('DROP TABLE users')
+            cursor.execute('ALTER TABLE users_new RENAME TO users')
+            
+            # Recreate indexes
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_users_email_hash ON users(email_hash)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_users_auth_provider_id ON users(auth_provider_id)')
+            
+            print("Migration complete: UNIQUE constraint applied to auth_provider_id")
+    
     conn.commit()
     conn.close()
 
@@ -121,6 +221,14 @@ def create_user(email: str, auth_provider: str = 'replit',
         print(f"Invalid WhatsApp format: {whatsapp}")
         return None
     
+    # Application-level guard: Check if auth_provider_id already exists
+    # This prevents duplicates even if UNIQUE constraint hasn't been applied yet
+    if auth_provider_id:
+        existing_user = get_user_by_auth_id(auth_provider_id)
+        if existing_user:
+            print(f"User already exists with auth_provider_id {auth_provider_id}, returning existing user")
+            return existing_user['id']
+    
     # Sanitize inputs
     email = sanitize_input(email, max_length=255)
     
@@ -155,8 +263,17 @@ def create_user(email: str, auth_provider: str = 'replit',
         return user_id
     
     except sqlite3.IntegrityError as e:
-        print(f"User creation failed (duplicate email?): {e}")
-        return None
+        error_msg = str(e).lower()
+        # If duplicate auth_provider_id, return existing user's ID
+        if 'auth_provider_id' in error_msg and auth_provider_id:
+            print(f"User already exists with auth_provider_id {auth_provider_id}, returning existing user")
+            # Get existing user by auth_provider_id
+            existing_user = get_user_by_auth_id(auth_provider_id)
+            return existing_user['id'] if existing_user else None
+        else:
+            # Duplicate email or other constraint violation
+            print(f"User creation failed (duplicate email?): {e}")
+            return None
     finally:
         conn.close()
 

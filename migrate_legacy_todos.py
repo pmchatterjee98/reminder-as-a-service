@@ -52,14 +52,14 @@ def assign_legacy_todos_to_user(user_id: str, dry_run: bool = True) -> Dict:
     Assign all NULL user_id todos to a specific user.
     
     Args:
-        user_id: The user ID to assign todos to
+        user_id: The INTERNAL RAAS user ID (UUID from users.id, NOT auth_provider_id)
         dry_run: If True, only simulate (don't actually update). Default True.
         
     Returns:
         Dict with migration statistics
     """
-    # Verify user exists
-    user = database_auth.get_user_by_auth_id(user_id)
+    # Verify user exists using internal user ID
+    user = database_auth.get_user_by_id(user_id)
     if not user:
         raise ValueError(f"User {user_id} not found in database. User must complete onboarding first.")
     
@@ -80,7 +80,7 @@ def assign_legacy_todos_to_user(user_id: str, dry_run: bool = True) -> Dict:
         }
     
     if not dry_run:
-        # Perform the actual migration
+        # Perform the actual migration - use internal RAAS user ID
         cursor.execute('''
             UPDATE todos 
             SET user_id = ? 
@@ -181,7 +181,9 @@ def migrate_legacy_todos_interactive():
     
     print(f"\n📋 Available users ({len(users)}):")
     for i, user in enumerate(users, 1):
-        print(f"   {i}. {user['auth_provider_id']} - {user.get('username', 'N/A')}")
+        print(f"   {i}. Internal ID: {user['id']}")
+        print(f"      Replit ID: {user.get('auth_provider_id', 'N/A')}")
+        print(f"      Email: {user.get('email_decrypted', 'N/A')}")
     
     print("\n🔧 Migration Options:")
     print("   1. View legacy todos")
@@ -211,7 +213,9 @@ def migrate_legacy_todos_interactive():
         # Assign to user
         print("\nSelect user to assign todos to:")
         for i, user in enumerate(users, 1):
-            print(f"   {i}. {user['auth_provider_id']} - {user.get('username', 'N/A')}")
+            print(f"   {i}. Internal ID: {user['id']}")
+            print(f"      Replit ID: {user.get('auth_provider_id', 'N/A')}")
+            print(f"      Email: {user.get('email_decrypted', 'N/A')}")
         
         user_choice = input(f"\nEnter user number (1-{len(users)}): ").strip()
         
@@ -219,17 +223,21 @@ def migrate_legacy_todos_interactive():
             user_index = int(user_choice) - 1
             if 0 <= user_index < len(users):
                 selected_user = users[user_index]
-                user_id = selected_user['auth_provider_id']
+                # CRITICAL: Use internal RAAS user ID (not auth_provider_id)
+                user_id = selected_user['id']
+                user_email = selected_user.get('email_decrypted', 'Unknown')
                 
                 # Dry run first
-                print(f"\n🔍 Dry run: Simulating assignment to {user_id}...")
+                print(f"\n🔍 Dry run: Simulating assignment to user {user_email}...")
+                print(f"   Internal ID: {user_id}")
                 result = assign_legacy_todos_to_user(user_id, dry_run=True)
                 print(f"   Would migrate {result['todos_migrated']} todos")
                 
                 confirm = input("\n⚠️  Proceed with actual migration? (yes/no): ").strip().lower()
                 if confirm == 'yes':
                     result = assign_legacy_todos_to_user(user_id, dry_run=False)
-                    print(f"\n✅ Success! Migrated {result['todos_migrated']} todos to user {user_id}")
+                    print(f"\n✅ Success! Migrated {result['todos_migrated']} todos to {user_email}")
+                    print(f"   User Internal ID: {user_id}")
                 else:
                     print("\n❌ Migration cancelled.")
             else:

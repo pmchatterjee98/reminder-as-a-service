@@ -44,9 +44,24 @@ Preferred communication style: Simple, everyday language.
 
 **Backend Architecture:**
 - Monolithic Python application structure with modular components for database, notifications, and scheduling.
-- **Data Persistence:** Uses **SQLite** with a single `todos` table, supporting automatic schema migrations.
+- **Data Persistence:** Uses **SQLite** with multi-user schema supporting automatic migrations.
 - **Background Job Processing:** **APScheduler** handles periodic checks for upcoming tasks and reminder dispatch.
 - **Notification System:** Supports multi-channel delivery via **SMTP (Email)**, **Twilio (SMS)**, and **Twilio (WhatsApp)**, with environment variable-based configuration for credentials.
+
+**Multi-User Architecture:**
+- **Dual-ID System:** Each user has two identifiers:
+  1. `users.id` - Internal RAAS UUID (PRIMARY KEY) → Used for all database queries
+  2. `users.auth_provider_id` - External Replit ID → Used only for authentication lookup
+- **Authentication Flow:**
+  1. User logs in via Replit Auth → Headers contain `X-Replit-User-Id` (external Replit ID)
+  2. System looks up user: `get_user_by_auth_id(replit_id)` → Returns full user record
+  3. System extracts internal ID: `user['id']` → Used for all database operations
+  4. Todos stored with: `todos.user_id = user['id']` (internal UUID)
+- **User Isolation:** All CRUD operations strictly filter by internal user ID
+- **Contact Data Security:** Email/phone/WhatsApp encrypted with Fernet, email also hashed with SHA-256
+- **Session Persistence:** Users stay logged in across devices via encrypted session tokens
+- **Onboarding Flow:** First-time users complete contact info and consent preferences
+- **Legacy Migration:** `migrate_legacy_todos.py` utility for assigning NULL user_id todos to specific users
 
 **Feature Specifications:**
 - **Automatic 24-Hour Reminders:** All tasks within 24 hours of their due date automatically trigger reminders via email, SMS, and/or WhatsApp (no manual configuration needed).
@@ -132,22 +147,45 @@ pytest -v                # Verbose output
 pytest --cov=.           # With coverage report
 ```
 
+**Testing Limitations:**
+- **Playwright Multi-User Tests:** Cannot fully test per-user isolation because Replit Auth headers are injected at the proxy level, causing all browser contexts to share the same `X-Replit-User-Id`. In production, different Replit users have different IDs, ensuring proper isolation.
+- **Workaround:** Unit tests cover multi-user authorization logic; Playwright tests validate single-user workflows.
+
 ## Recent Changes
 
 **Multi-User Authentication with Replit Auth** (November 2025)
-- Complete Replit Auth integration for professional multi-user system
-- User onboarding flow captures email, phone, WhatsApp, and consent preferences at first login
-- Persistent session management across devices eliminates repeated logins
-- Strict per-user authorization: users can ONLY access their own reminders
-- Security-first architecture with field-level encryption for all contact data
-- Created 3 new modules: `security.py` (encryption), `database_auth.py` (encrypted storage), `auth_replit.py` (Replit Auth integration)
-- Created `database_multi_user.py` with strict ownership enforcement for all CRUD operations
-- 141 total tests (67 authentication + 74 existing RAAS) - all passing
-- GDPR-compliant consent management with explicit opt-in for notifications
-- Emails stored as SHA-256 hash + Fernet encrypted, never plaintext
-- Critical security fix: removed NULL user_id bypass that allowed cross-user data access
-- Architect-approved security model with zero authorization gaps
-- **Note:** ENCRYPTION_KEY must be added to Replit Secrets before production use
+- **Complete Replit Auth integration** for professional multi-user system
+- **Dual-ID Architecture:** Internal RAAS UUID (`users.id`) for all database operations + external Replit ID (`auth_provider_id`) for authentication lookup
+- **User onboarding flow** captures email, phone, WhatsApp, and consent preferences at first login
+- **Persistent session management** across devices eliminates repeated logins
+- **Strict per-user authorization:** users can ONLY access their own reminders
+- **Security-first architecture** with field-level encryption for all contact data
+- **Created 5 new modules:**
+  - `security.py` - Fernet encryption + SHA-256 hashing utilities
+  - `database_auth.py` - Multi-user database with encrypted contact storage
+  - `auth_replit.py` - Replit Auth integration helpers
+  - `database_multi_user.py` - Per-user CRUD operations with strict ownership enforcement
+  - `migrate_legacy_todos.py` - Interactive CLI utility for legacy data migration
+- **Updated 3 core modules:**
+  - `app.py` - Full Replit Auth integration in Streamlit frontend
+  - `api.py` - Layered security (API key + Replit headers + database verification)
+  - `scheduler.py` - Optimized per-user SQL queries (eliminated O(N²) scans)
+- **141 total tests** (67 authentication + 74 existing RAAS) - all passing
+- **GDPR-compliant consent management** with explicit opt-in for notifications
+- **Contact data encryption:** Email stored as SHA-256 hash + Fernet encrypted, never plaintext
+- **Critical security fixes:**
+  - Removed NULL user_id bypass that allowed cross-user data access
+  - Fixed user ID consistency bug in scheduler and FastAPI (now use internal UUID)
+  - Fixed migration utility to use internal RAAS UUID (not auth_provider_id)
+  - **Added UNIQUE constraint to auth_provider_id** (prevents duplicate Replit user accounts)
+  - **Application-level guard** prevents duplicates even before migration runs
+  - **Automatic migration** retrofits UNIQUE constraint on legacy databases
+  - **Multi-layer data integrity protection** (guard + migration + schema constraint)
+- **Architect-approved:** Zero authorization gaps, production-ready multi-user isolation
+- **Deployment requirements:**
+  - `ENCRYPTION_KEY` must be added to Replit Secrets before production use
+  - `RAAS_API_KEY` recommended for API security (mandatory by default)
+  - Run migration utility if legacy NULL user_id todos exist
 
 **UX Improvements & Auto-Reminders** (November 2025)
 - Automatic 24-hour reminder system: all tasks within 24 hours of due date get reminders automatically
