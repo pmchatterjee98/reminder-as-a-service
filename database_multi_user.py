@@ -222,6 +222,7 @@ def delete_completed_tasks_for_user(user_id: str) -> int:
 def get_upcoming_todos_for_user(user_id: str) -> List[Dict]:
     """
     Get todos with upcoming deadlines for a user (for reminder system).
+    Efficiently queries only the user's todos.
     
     Args:
         user_id: User's ID
@@ -229,16 +230,36 @@ def get_upcoming_todos_for_user(user_id: str) -> List[Dict]:
     Returns:
         List of upcoming todos for the user
     """
-    # Get all upcoming todos
-    all_upcoming = database.get_upcoming_todos()
+    import sqlite3
+    from datetime import datetime, timedelta
     
-    # Filter by user_id - strict ownership check
-    user_upcoming = [
-        todo for todo in all_upcoming 
-        if todo.get('user_id') == user_id
-    ]
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
     
-    return user_upcoming
+    # Calculate the time window for upcoming reminders (next 24 hours)
+    now = datetime.now()
+    reminder_window = now + timedelta(hours=24)
+    
+    # Get todos for this user that:
+    # 1. Belong to the user
+    # 2. Are not completed
+    # 3. Haven't had reminders sent yet
+    # 4. Due date is within the reminder window
+    cursor.execute('''
+        SELECT * FROM todos
+        WHERE user_id = ?
+          AND completed = 0
+          AND reminder_sent = 0
+          AND datetime(due_date) <= ?
+          AND datetime(due_date) > ?
+        ORDER BY due_date ASC
+    ''', (user_id, reminder_window.isoformat(), now.isoformat()))
+    
+    todos = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    
+    return todos
 
 
 def get_user_statistics(user_id: str) -> Dict:

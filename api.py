@@ -3,13 +3,15 @@ RAAS API - Reminder as a Service REST API
 Provides RESTful endpoints with automatic Swagger/OpenAPI documentation
 """
 
-from fastapi import FastAPI, HTTPException, Query, Depends, status
+from fastapi import FastAPI, HTTPException, Query, Depends, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 import database
+import database_multi_user
+import database_auth
 import os
 
 # Initialize FastAPI app with metadata for Swagger
@@ -70,6 +72,90 @@ app.add_middleware(
 
 # Initialize database
 database.init_db()
+database_auth.init_auth_db()
+
+# --- Authentication Helpers ---
+
+# API Key for securing the REST API (MANDATORY - prevents header spoofing)
+API_AUTH_KEY = os.getenv("RAAS_API_KEY")
+
+# Production security: Require API key for all authenticated endpoints
+REQUIRE_API_KEY = os.getenv("REQUIRE_API_KEY", "true").lower() == "true"
+
+def verify_api_auth(request: Request, api_key: Optional[str] = Query(None, alias="api_key")) -> bool:
+    """
+    Verify API authentication key to prevent unauthorized access.
+    
+    MANDATORY AUTHENTICATION:
+    - RAAS_API_KEY environment variable MUST be set in production
+    - All API requests MUST include the key as a query parameter: ?api_key=YOUR_KEY
+    - This prevents header spoofing and ensures secure multi-user isolation
+    
+    DEVELOPMENT MODE:
+    - Set REQUIRE_API_KEY=false to disable (for local testing only)
+    - NEVER disable in production - exposes critical security vulnerability
+    
+    Raises:
+        HTTPException: If API key is invalid or missing
+    """
+    # In production mode (default), API key is REQUIRED
+    if REQUIRE_API_KEY:
+        if not API_AUTH_KEY:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="API not configured: RAAS_API_KEY environment variable must be set. See documentation for setup instructions."
+            )
+        if not api_key or api_key != API_AUTH_KEY:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or missing API key. Include ?api_key=YOUR_KEY in the request URL."
+            )
+    return True
+
+def get_current_user(request: Request, api_authenticated: bool = Depends(verify_api_auth)) -> str:
+    """
+    Extract and validate user from Replit Auth headers.
+    
+    SECURITY MODEL:
+    - API Key Protection: Set RAAS_API_KEY environment variable to require API key
+      authentication for all API requests. This prevents header spoofing attacks.
+    
+    - Header Validation: Reads X-Replit-User-Id and X-Replit-User-Name headers.
+      Both headers must be present for consistency.
+    
+    - Database Verification: Ensures user exists in database (completed onboarding).
+    
+    PRODUCTION DEPLOYMENT:
+    1. ALWAYS set RAAS_API_KEY to a secure random value
+    2. Use HTTPS only (handled by Replit automatically)
+    3. Consider adding rate limiting for additional security
+    
+    Returns:
+        user_id: The authenticated user's ID
+        
+    Raises:
+        HTTPException: If user is not authenticated
+    """
+    user_id = request.headers.get("X-Replit-User-Id")
+    user_name = request.headers.get("X-Replit-User-Name")
+    
+    # Require both headers for consistency (prevents partial spoofing)
+    if not user_id or not user_name:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required. Missing Replit Auth headers.",
+            headers={"WWW-Authenticate": "Replit-Auth"}
+        )
+    
+    # Verify user exists in database (prevents access before onboarding)
+    user = database_auth.get_user_by_auth_id(user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User not found. Please complete onboarding in the Streamlit app first."
+        )
+    
+    return user_id
 
 # Pydantic Models for request/response validation
 
@@ -137,12 +223,22 @@ class Message(BaseModel):
 @app.get("/", tags=["root"])
 async def root():
     """
-    Root endpoint - API information
+    Root endpoint - API information (public endpoint, no auth required)
     """
+    # Security status check
+    if REQUIRE_API_KEY and not API_AUTH_KEY:
+        security_status = "🔒 SETUP REQUIRED: Set RAAS_API_KEY environment variable"
+    elif REQUIRE_API_KEY and API_AUTH_KEY:
+        security_status = "🔒 Protected with API key (secure multi-user mode)"
+    else:
+        security_status = "⚠️  WARNING: Development mode - API key not required (UNSAFE for production)"
+    
     return {
         "service": "⚡ RAAS API",
         "tagline": "Reminder as a Service — Never miss what matters",
         "version": "1.0.0",
+        "security": security_status,
+        "auth_required": REQUIRE_API_KEY,
         "documentation": "/docs",
         "redoc": "/redoc",
         "endpoints": {
@@ -153,20 +249,21 @@ async def root():
 
 @app.get("/todos", response_model=List[Todo], tags=["todos"])
 async def get_todos(
+    user_id: str = Depends(get_current_user),
     category: Optional[str] = Query(None, description="Filter by category"),
     priority: Optional[str] = Query(None, description="Filter by priority (High/Medium/Low)"),
     completed: Optional[bool] = Query(None, description="Filter by completion status"),
     limit: Optional[int] = Query(None, ge=1, le=1000, description="Limit number of results"),
 ):
     """
-    Get all todos with optional filtering
+    Get all todos for the authenticated user with optional filtering
     
     - **category**: Filter by category name
     - **priority**: Filter by priority level (High, Medium, Low)
     - **completed**: Filter by completion status (true/false)
     - **limit**: Maximum number of results to return
     """
-    todos = database.get_all_todos()
+    todos = database_multi_user.get_todos_for_user(user_id)
     
     # Apply filters
     if category:
@@ -181,27 +278,28 @@ async def get_todos(
     return todos
 
 @app.get("/todos/{todo_id}", response_model=Todo, tags=["todos"])
-async def get_todo(todo_id: int):
+async def get_todo(todo_id: int, user_id: str = Depends(get_current_user)):
     """
-    Get a specific todo by ID
+    Get a specific todo by ID (must belong to authenticated user)
     
     - **todo_id**: The ID of the todo to retrieve
     """
-    todo = database.get_todo_by_id(todo_id)
+    todo = database_multi_user.get_todo_by_id_for_user(todo_id, user_id)
     if not todo:
-        raise HTTPException(status_code=404, detail=f"Todo with ID {todo_id} not found")
+        raise HTTPException(status_code=404, detail=f"Todo with ID {todo_id} not found or access denied")
     return todo
 
 @app.post("/todos", response_model=Todo, status_code=201, tags=["todos"])
-async def create_todo(todo: TodoCreate):
+async def create_todo(todo: TodoCreate, user_id: str = Depends(get_current_user)):
     """
-    Create a new todo
+    Create a new todo for the authenticated user
     
     Provide all required fields to create a new reminder. The system will automatically
     send notifications based on the reminder_hours setting.
     """
     try:
-        todo_id = database.add_todo(
+        todo_id = database_multi_user.add_todo_for_user(
+            user_id=user_id,
             title=todo.title,
             description=todo.description or "",
             due_date=todo.due_date,
@@ -215,23 +313,23 @@ async def create_todo(todo: TodoCreate):
             category=todo.category,
             priority=todo.priority
         )
-        created_todo = database.get_todo_by_id(todo_id)
+        created_todo = database_multi_user.get_todo_by_id_for_user(todo_id, user_id)
         return created_todo
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.put("/todos/{todo_id}", response_model=Todo, tags=["todos"])
-async def update_todo(todo_id: int, todo_update: TodoUpdate):
+async def update_todo(todo_id: int, todo_update: TodoUpdate, user_id: str = Depends(get_current_user)):
     """
-    Update an existing todo
+    Update an existing todo (must belong to authenticated user)
     
     - **todo_id**: The ID of the todo to update
     
     Only provide the fields you want to update. All fields are optional.
     """
-    existing_todo = database.get_todo_by_id(todo_id)
+    existing_todo = database_multi_user.get_todo_by_id_for_user(todo_id, user_id)
     if not existing_todo:
-        raise HTTPException(status_code=404, detail=f"Todo with ID {todo_id} not found")
+        raise HTTPException(status_code=404, detail=f"Todo with ID {todo_id} not found or access denied")
     
     # Prepare update data
     update_data = todo_update.model_dump(exclude_unset=True)
@@ -240,7 +338,8 @@ async def update_todo(todo_id: int, todo_update: TodoUpdate):
     merged_data = {**existing_todo, **update_data}
     
     try:
-        database.update_todo(
+        database_multi_user.update_todo_for_user(
+            user_id=user_id,
             todo_id=todo_id,
             title=merged_data['title'],
             description=merged_data['description'] or "",
@@ -262,93 +361,65 @@ async def update_todo(todo_id: int, todo_update: TodoUpdate):
             current_completed = bool(existing_todo['completed'])
             desired_completed = bool(update_data['completed'])
             if current_completed != desired_completed:
-                database.toggle_complete(todo_id)
+                database_multi_user.toggle_complete_for_user(todo_id, user_id)
         
-        updated_todo = database.get_todo_by_id(todo_id)
+        updated_todo = database_multi_user.get_todo_by_id_for_user(todo_id, user_id)
         return updated_todo
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.delete("/todos/{todo_id}", response_model=Message, tags=["todos"])
-async def delete_todo(todo_id: int):
+async def delete_todo(todo_id: int, user_id: str = Depends(get_current_user)):
     """
-    Delete a todo
+    Delete a todo (must belong to authenticated user)
     
     - **todo_id**: The ID of the todo to delete
     
     This action is permanent and cannot be undone.
     """
-    existing_todo = database.get_todo_by_id(todo_id)
+    existing_todo = database_multi_user.get_todo_by_id_for_user(todo_id, user_id)
     if not existing_todo:
-        raise HTTPException(status_code=404, detail=f"Todo with ID {todo_id} not found")
+        raise HTTPException(status_code=404, detail=f"Todo with ID {todo_id} not found or access denied")
     
-    database.delete_todo(todo_id)
+    database_multi_user.delete_todo_for_user(todo_id, user_id)
     return {"message": f"Todo {todo_id} deleted successfully"}
 
 @app.post("/todos/{todo_id}/toggle-complete", response_model=Todo, tags=["todos"])
-async def toggle_todo_complete(todo_id: int):
+async def toggle_todo_complete(todo_id: int, user_id: str = Depends(get_current_user)):
     """
-    Toggle the completion status of a todo
+    Toggle the completion status of a todo (must belong to authenticated user)
     
     - **todo_id**: The ID of the todo to toggle
     
     If the todo is complete, it will be marked as incomplete.
     If the todo is incomplete, it will be marked as complete.
     """
-    existing_todo = database.get_todo_by_id(todo_id)
+    existing_todo = database_multi_user.get_todo_by_id_for_user(todo_id, user_id)
     if not existing_todo:
-        raise HTTPException(status_code=404, detail=f"Todo with ID {todo_id} not found")
+        raise HTTPException(status_code=404, detail=f"Todo with ID {todo_id} not found or access denied")
     
-    database.toggle_complete(todo_id)
-    updated_todo = database.get_todo_by_id(todo_id)
+    database_multi_user.toggle_complete_for_user(todo_id, user_id)
+    updated_todo = database_multi_user.get_todo_by_id_for_user(todo_id, user_id)
     return updated_todo
 
 @app.get("/stats", response_model=TodoStats, tags=["statistics"])
-async def get_stats():
+async def get_stats(user_id: str = Depends(get_current_user)):
     """
-    Get statistics about all todos
+    Get statistics about the authenticated user's todos
     
     Returns counts for total, completed, pending, overdue, and priority breakdowns.
     """
-    todos = database.get_all_todos()
-    now = datetime.now()
-    
-    total = len(todos)
-    completed = sum(1 for t in todos if t.get('completed'))
-    pending = total - completed
-    
-    # Count overdue (past due date and not completed)
-    overdue = 0
-    for t in todos:
-        if not t.get('completed'):
-            try:
-                due_date_str = t['due_date'].replace(' ', 'T') if ' ' in t['due_date'] else t['due_date']
-                due_date = datetime.fromisoformat(due_date_str)
-                if due_date < now:
-                    overdue += 1
-            except:
-                pass
-    
-    # Count by priority
-    high_priority = sum(1 for t in todos if t.get('priority') == 'High')
-    medium_priority = sum(1 for t in todos if t.get('priority') == 'Medium')
-    low_priority = sum(1 for t in todos if t.get('priority') == 'Low')
-    
-    # Categories breakdown
-    categories = {}
-    for t in todos:
-        cat = t.get('category', 'Uncategorized')
-        categories[cat] = categories.get(cat, 0) + 1
+    stats = database_multi_user.get_user_statistics(user_id)
     
     return {
-        "total": total,
-        "completed": completed,
-        "pending": pending,
-        "overdue": overdue,
-        "high_priority": high_priority,
-        "medium_priority": medium_priority,
-        "low_priority": low_priority,
-        "categories": categories
+        "total": stats['total'],
+        "completed": stats['completed'],
+        "pending": stats['pending'],
+        "overdue": stats['overdue'],
+        "high_priority": stats['high_priority'],
+        "medium_priority": stats['medium_priority'],
+        "low_priority": stats['low_priority'],
+        "categories": stats['categories']
     }
 
 # --- Siri / Voice Assistant Integration ---
@@ -376,22 +447,28 @@ class SiriTasksResponse(BaseModel):
     total_done: int = Field(..., description="Total number of completed tasks")
 
 @app.get("/api/siri/tasks", response_model=SiriTasksResponse, tags=["siri"])
-async def siri_get_tasks(authorized: bool = Depends(verify_api_key)):
+async def siri_get_tasks(
+    user_id: str = Depends(get_current_user),
+    authorized: bool = Depends(verify_api_key)
+):
     """
     Get tasks for Siri/voice assistants in simplified JSON format
     
-    Returns pending and completed tasks as simple string lists, perfect for
-    voice assistant integrations.
+    Returns pending and completed tasks for the authenticated user as simple string lists,
+    perfect for voice assistant integrations.
     
-    **Security**: If SIRI_API_KEY environment variable is set, you must provide
-    the key as a query parameter: `?key=YOUR_KEY`
+    **Security**: 
+    - Requires Replit Auth headers (X-Replit-User-Id)
+    - If SIRI_API_KEY environment variable is set, you must also provide
+      the key as a query parameter: `?key=YOUR_KEY`
     
     **Example**:
     ```
-    curl 'https://your-app.replit.app/api/siri/tasks?key=YOUR_KEY'
+    curl -H "X-Replit-User-Id: YOUR_USER_ID" \
+         'https://your-app.replit.app/api/siri/tasks?key=YOUR_KEY'
     ```
     """
-    todos = database.get_all_todos()
+    todos = database_multi_user.get_todos_for_user(user_id)
     
     pending = [t['title'] for t in todos if not t.get('completed')]
     done = [t['title'] for t in todos if t.get('completed')]
@@ -404,11 +481,14 @@ async def siri_get_tasks(authorized: bool = Depends(verify_api_key)):
     }
 
 @app.get("/api/siri/say", response_class=PlainTextResponse, tags=["siri"])
-async def siri_say_tasks(authorized: bool = Depends(verify_api_key)):
+async def siri_say_tasks(
+    user_id: str = Depends(get_current_user),
+    authorized: bool = Depends(verify_api_key)
+):
     """
     Get a spoken summary of pending tasks for Siri/voice assistants
     
-    Returns a human-readable plain text sentence that Siri can speak aloud.
+    Returns a human-readable plain text sentence that Siri can speak aloud for the authenticated user.
     
     **Rules**:
     - No pending tasks → "You have no pending tasks."
@@ -416,21 +496,25 @@ async def siri_say_tasks(authorized: bool = Depends(verify_api_key)):
     - 2-5 tasks → "You have N tasks: task1; task2; task3."
     - More than 5 tasks → Lists first 5, then "And M more."
     
-    **Security**: If SIRI_API_KEY environment variable is set, you must provide
-    the key as a query parameter: `?key=YOUR_KEY`
+    **Security**: 
+    - Requires Replit Auth headers (X-Replit-User-Id)
+    - If SIRI_API_KEY environment variable is set, you must also provide
+      the key as a query parameter: `?key=YOUR_KEY`
     
     **Example**:
     ```
-    curl 'https://your-app.replit.app/api/siri/say?key=YOUR_KEY'
+    curl -H "X-Replit-User-Id: YOUR_USER_ID" \
+         'https://your-app.replit.app/api/siri/say?key=YOUR_KEY'
     ```
     
     **Siri Shortcut Setup**:
     1. Open Shortcuts app → Create new shortcut
     2. Add "Get Contents of URL" action with this endpoint
-    3. Add "Speak Text" action using the response
-    4. Add to Siri with phrase "Check my reminders"
+    3. Add custom headers: X-Replit-User-Id with your user ID
+    4. Add "Speak Text" action using the response
+    5. Add to Siri with phrase "Check my reminders"
     """
-    todos = database.get_all_todos()
+    todos = database_multi_user.get_todos_for_user(user_id)
     pending = [t['title'] for t in todos if not t.get('completed')]
     
     if not pending:
