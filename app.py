@@ -59,16 +59,15 @@ if st.session_state.logged_out:
     
     st.markdown("""
     <div style="background: rgba(108, 92, 231, 0.1); border-left: 4px solid #6C5CE7; padding: 1rem; border-radius: 8px; margin: 1.5rem 0;">
-        <h4 style="color: #6C5CE7; margin-top: 0;">📌 About Replit Auth</h4>
-        <p style="color: rgba(248, 249, 250, 0.9); line-height: 1.6; margin-bottom: 0;">
-            RAAS uses <strong>Replit Authentication</strong> for secure access. If you're still signed in to your Replit account, 
-            clicking "Return to RAAS" below will automatically log you back in.
+        <h4 style="color: #6C5CE7; margin-top: 0;">Choose Your Next Step</h4>
+        <p style="color: rgba(248, 249, 250, 0.9); line-height: 1.6; margin-bottom: 0.75rem;">
+            <strong>Same Account:</strong> Click "Return to RAAS" to log back in as <strong>{}</strong>
         </p>
-        <p style="color: rgba(248, 249, 250, 0.7); line-height: 1.6; margin-bottom: 0; margin-top: 0.75rem;">
-            <strong>To switch accounts:</strong> Log out of Replit first (replit.com), then return here.
+        <p style="color: rgba(248, 249, 250, 0.9); line-height: 1.6; margin-bottom: 0;">
+            <strong>Different Account:</strong> Click "Sign in with Different Account" to log out of Replit and sign in with another username
         </p>
     </div>
-    """, unsafe_allow_html=True)
+    """.format(st.session_state.logout_username or "current user"), unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     
@@ -85,17 +84,17 @@ if st.session_state.logged_out:
             <button style="
                 width: 100%;
                 padding: 0.5rem 1rem;
-                background: rgba(255, 255, 255, 0.05);
-                color: #F8F9FA;
-                border: 1px solid rgba(255, 255, 255, 0.2);
+                background: linear-gradient(135deg, #00D1B2 0%, #00b89f 100%);
+                color: white;
+                border: none;
                 border-radius: 8px;
                 font-size: 1rem;
                 font-weight: 600;
                 cursor: pointer;
                 transition: all 0.2s ease;
-            " onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'" 
-               onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'">
-                🚪 Log Out of Replit
+            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0, 209, 178, 0.4)';" 
+               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                👤 Sign in with Different Account
             </button>
         </a>
         """, unsafe_allow_html=True)
@@ -827,59 +826,87 @@ with col_header3:
                 from database_auth import update_user_consent, update_user_contact_info, update_user_profile, get_user_by_id
                 
                 errors = []
+                updated_fields = []
+                
+                # Track which fields were changed
+                name_changed = name_input != (current_user.get('name') or '')
+                username_changed = username_input != (current_user.get('username') or '')
+                email_changed = email_input != (current_user.get('email_decrypted') or '')
+                phone_changed = phone_input != (current_user.get('phone_decrypted') or '')
+                whatsapp_changed = whatsapp_input != (current_user.get('whatsapp_decrypted') or '')
+                email_consent_changed = email_enabled != bool(current_user.get('consent_email'))
+                sms_consent_changed = sms_enabled != bool(current_user.get('consent_sms'))
+                whatsapp_consent_changed = whatsapp_enabled != bool(current_user.get('consent_whatsapp'))
                 
                 # Update profile (name and username)
                 if name_input or username_input:
-                    # Only update if changed
-                    name_changed = name_input != (current_user.get('name') or '')
-                    username_changed = username_input != (current_user.get('username') or '')
-                    
                     if name_changed or username_changed:
                         profile_success = update_user_profile(
                             user_id=st.session_state.user_id,
                             name=name_input if name_changed else None,
                             username=username_input if username_changed else None
                         )
-                        if not profile_success:
+                        if profile_success:
+                            if name_changed:
+                                updated_fields.append("Name")
+                            if username_changed:
+                                updated_fields.append("Username")
+                        else:
                             errors.append("Failed to update profile (username may already be taken)")
                 
                 # Update contact info (email, phone, whatsapp)
-                contact_changed = (
-                    email_input != (current_user.get('email_decrypted') or '') or
-                    phone_input != (current_user.get('phone_decrypted') or '') or
-                    whatsapp_input != (current_user.get('whatsapp_decrypted') or '')
-                )
-                
-                if contact_changed:
+                if email_changed or phone_changed or whatsapp_changed:
                     contact_success = update_user_contact_info(
                         user_id=st.session_state.user_id,
-                        email=email_input if email_input else None,
-                        phone=phone_input if phone_input else None,
-                        whatsapp=whatsapp_input if whatsapp_input else None
+                        email=email_input if email_changed else None,
+                        phone=phone_input if phone_changed else None,
+                        whatsapp=whatsapp_input if whatsapp_changed else None
                     )
-                    if not contact_success:
+                    if contact_success:
+                        if email_changed:
+                            updated_fields.append("Email")
+                        if phone_changed:
+                            updated_fields.append("Phone")
+                        if whatsapp_changed:
+                            updated_fields.append("WhatsApp")
+                    else:
                         errors.append("Failed to update contact info (check email/phone format)")
                 
                 # Update consent preferences
-                consent_success = update_user_consent(
-                    user_id=st.session_state.user_id,
-                    consent_email=email_enabled,
-                    consent_sms=sms_enabled,
-                    consent_whatsapp=whatsapp_enabled
-                )
-                
-                if not consent_success:
-                    errors.append("Failed to update notification preferences")
+                if email_consent_changed or sms_consent_changed or whatsapp_consent_changed:
+                    consent_success = update_user_consent(
+                        user_id=st.session_state.user_id,
+                        consent_email=email_enabled,
+                        consent_sms=sms_enabled,
+                        consent_whatsapp=whatsapp_enabled
+                    )
+                    if consent_success:
+                        if email_consent_changed:
+                            updated_fields.append("Email Notifications")
+                        if sms_consent_changed:
+                            updated_fields.append("SMS Notifications")
+                        if whatsapp_consent_changed:
+                            updated_fields.append("WhatsApp Notifications")
+                    else:
+                        errors.append("Failed to update notification preferences")
                 
                 if errors:
                     for error in errors:
                         st.error(f"❌ {error}")
-                else:
-                    st.success("✅ Settings saved successfully!")
+                elif updated_fields:
+                    # Show which fields were updated
+                    fields_str = ", ".join(updated_fields)
+                    st.success(f"✅ Successfully updated: {fields_str}")
                     # Refresh user data to reflect changes
                     st.session_state.user_data = get_user_by_id(st.session_state.user_id)
+                    # Small delay to show success message
+                    import time
+                    time.sleep(1.5)
+                    # Return to dashboard (close popover by setting menu view to main)
                     st.session_state.menu_view = 'main'
                     st.rerun()
+                else:
+                    st.info("ℹ️ No changes detected")
 
 # Sidebar for adding/editing todos
 with st.sidebar:
