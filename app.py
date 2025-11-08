@@ -581,6 +581,11 @@ with col_header3:
                         // Update UI
                         document.getElementById('notification-status').innerHTML = 
                             '<div style="padding: 0.5rem; background: rgba(107, 207, 127, 0.2); border-radius: 8px; color: #6bcf7f; font-size: 0.9rem;">✅ Mobile alarms enabled</div>';
+                        
+                        // CRITICAL: Schedule notifications immediately after permission grant
+                        if (window.raasScheduleNotifications) {
+                            window.raasScheduleNotifications();
+                        }
                     } else if (permission === 'denied') {
                         alert('Notifications blocked. Please enable them in your browser settings.');
                     }
@@ -625,7 +630,7 @@ with col_header3:
             </button>
             
             <p style="color: rgba(248, 249, 250, 0.5); font-size: 0.8rem; margin-top: 0.5rem;">
-                💡 When enabled, you'll get browser notifications on your phone for tasks due soon, even when the app is closed.
+                💡 When enabled, you'll get browser notifications on your phone for tasks due within 24 hours while the app is open in a tab.
             </p>
             """
             
@@ -1148,29 +1153,98 @@ todos_json = json.dumps([{
 } for todo in todos])
 
 notification_html = f"""
-<script src="./app/static/notifications.js"></script>
 <script>
-// Initialize notifications when page loads
+// RAAS Mobile Notifications System - Inline version
 (function() {{
     const tasks = {todos_json};
     
-    // Wait for raasNotifications to be ready
-    function initializeNotifications() {{
-        if (window.raasNotifications) {{
-            // Check and schedule notifications for tasks < 24 hours
-            window.raasNotifications.checkAndScheduleTasks(tasks);
-        }} else {{
-            // Retry if not loaded yet
-            setTimeout(initializeNotifications, 100);
-        }}
+    // Check if notifications are supported and granted
+    if (!('Notification' in window)) {{
+        console.log('This browser does not support notifications');
+        return;
     }}
     
-    // Start initialization
-    if (document.readyState === 'loading') {{
-        document.addEventListener('DOMContentLoaded', initializeNotifications);
-    }} else {{
-        initializeNotifications();
+    // Schedule notifications for tasks due within 24 hours
+    function scheduleNotifications(tasks) {{
+        const now = new Date();
+        const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        
+        tasks.forEach(task => {{
+            if (task.completed) return;
+            
+            const dueDate = new Date(task.due_date);
+            
+            // Check if task is due within 24 hours
+            if (dueDate > now && dueDate <= twentyFourHoursFromNow) {{
+                // Calculate when to show notification (1 hour before, or now if < 1 hour left)
+                const oneHourBefore = new Date(dueDate.getTime() - 60 * 60 * 1000);
+                const notificationTime = oneHourBefore > now ? oneHourBefore : now;
+                const delay = notificationTime.getTime() - now.getTime();
+                
+                // Schedule the notification
+                setTimeout(() => {{
+                    showNotification(task);
+                }}, Math.max(delay, 0));
+                
+                console.log(`Scheduled notification for task "${{task.title}}" in ${{Math.round(delay/1000/60)}} minutes`);
+            }}
+        }});
     }}
+    
+    // Show notification for a task
+    function showNotification(task) {{
+        const dueDate = new Date(task.due_date);
+        const now = new Date();
+        const hoursLeft = Math.round((dueDate - now) / (1000 * 60 * 60));
+        const minutesLeft = Math.round((dueDate - now) / (1000 * 60));
+        
+        let timeText;
+        if (hoursLeft >= 1) {{
+            timeText = `Due in ${{hoursLeft}} hour${{hoursLeft > 1 ? 's' : ''}}`;
+        }} else if (minutesLeft > 0) {{
+            timeText = `Due in ${{minutesLeft}} minute${{minutesLeft > 1 ? 's' : ''}}`;
+        }} else {{
+            timeText = 'Due now!';
+        }}
+        
+        const priorityEmoji = task.priority === 'High' ? '🔴' : task.priority === 'Medium' ? '🟡' : '🟢';
+        
+        new Notification(`⚡ ${{task.title}}`, {{
+            body: `${{priorityEmoji}} ${{timeText}}\\n${{task.description || 'No description'}}`,
+            icon: '/app/static/icon-192.png',
+            badge: '/app/static/icon-72.png',
+            vibrate: [200, 100, 200, 100, 200],
+            tag: `raas-task-${{task.id}}`,
+            requireInteraction: true,
+            silent: false
+        }});
+    }}
+    
+    // Expose scheduling function globally so it can be called after permission grant
+    window.raasScheduleNotifications = function() {{
+        if (Notification.permission === 'granted') {{
+            scheduleNotifications(tasks);
+            console.log('RAAS Notifications: Scheduling enabled for', tasks.length, 'tasks');
+        }} else {{
+            console.log('RAAS Notifications: Permission not granted. Current status:', Notification.permission);
+        }}
+    }};
+    
+    // Schedule immediately if permission is already granted
+    if (Notification.permission === 'granted') {{
+        scheduleNotifications(tasks);
+        console.log('RAAS Notifications: Scheduling enabled for', tasks.length, 'tasks');
+    }} else {{
+        console.log('RAAS Notifications: Permission not granted. Current status:', Notification.permission);
+    }}
+    
+    // Re-check and schedule when page becomes visible (tab focus)
+    document.addEventListener('visibilitychange', function() {{
+        if (!document.hidden && Notification.permission === 'granted') {{
+            console.log('RAAS Notifications: Page visible, re-checking tasks...');
+            scheduleNotifications(tasks);
+        }}
+    }});
 }})();
 </script>
 """
