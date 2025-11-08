@@ -364,6 +364,61 @@ def get_user_by_id(user_id: str) -> Optional[Dict]:
     return user
 
 
+def update_user_consent(user_id: str, consent_email: Optional[bool] = None, 
+                       consent_sms: Optional[bool] = None, 
+                       consent_whatsapp: Optional[bool] = None) -> bool:
+    """
+    Update user's notification consent preferences.
+    
+    Args:
+        user_id: User's UUID
+        consent_email: New email consent preference (None to keep unchanged)
+        consent_sms: New SMS consent preference (None to keep unchanged)
+        consent_whatsapp: New WhatsApp consent preference (None to keep unchanged)
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    
+    try:
+        # Build dynamic UPDATE query based on which preferences are provided
+        updates = []
+        params = []
+        
+        if consent_email is not None:
+            updates.append("consent_email = ?")
+            params.append(1 if consent_email else 0)
+        
+        if consent_sms is not None:
+            updates.append("consent_sms = ?")
+            params.append(1 if consent_sms else 0)
+        
+        if consent_whatsapp is not None:
+            updates.append("consent_whatsapp = ?")
+            params.append(1 if consent_whatsapp else 0)
+        
+        if not updates:
+            # Nothing to update
+            return True
+        
+        params.append(user_id)
+        query = f"UPDATE users SET {', '.join(updates)} WHERE id = ?"
+        
+        cursor.execute(query, params)
+        conn.commit()
+        
+        print(f"Updated consent preferences for user {user_id}")
+        return cursor.rowcount > 0
+    
+    except Exception as e:
+        print(f"Error updating consent preferences: {e}")
+        return False
+    finally:
+        conn.close()
+
+
 def get_user_by_auth_id(auth_provider_id: str) -> Optional[Dict]:
     """
     Get user by authentication provider ID (e.g., Replit user ID).
