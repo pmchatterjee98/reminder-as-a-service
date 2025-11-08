@@ -40,8 +40,8 @@ Preferred communication style: Simple, everyday language.
 **Backend Architecture:**
 - Monolithic Python application structure with modular components.
 - **Data Persistence:** Uses **SQLite** with multi-user schema supporting automatic migrations.
-- **Background Job Processing:** **APScheduler** handles periodic checks for upcoming tasks and reminder dispatch.
-- **Notification System:** Supports multi-channel delivery via **SMTP (Email)**, **Twilio (SMS)**, and **Twilio (WhatsApp)**.
+- **Background Job Processing:** **APScheduler** handles periodic checks for upcoming tasks and reminder dispatch (runs every hour).
+- **Notification System:** Supports multi-channel delivery via **SMTP (Email)**, **Twilio (SMS)**, and **Twilio (WhatsApp)** with quiet hours protection for SMS/WhatsApp (12am-9:30am).
 
 **Multi-User Architecture:**
 - **Dual-ID System:** Each user has an internal RAAS UUID and an external Replit ID for authentication lookup.
@@ -54,6 +54,7 @@ Preferred communication style: Simple, everyday language.
 
 **Feature Specifications:**
 - **Automatic 24-Hour Reminders:** All tasks within 24 hours of their due date automatically trigger reminders.
+- **Quiet Hours Protection:** SMS and WhatsApp notifications respect quiet hours (12:00 AM - 9:30 AM) and are queued until 9:30 AM to avoid disturbing sleep. Email notifications continue normally as they're less intrusive.
 - **Auto-Cleanup on Refresh:** Completed tasks are automatically deleted when the app refreshes.
 - **Recurring Task Management:** Automatic rescheduling based on daily, weekly, monthly, or yearly frequencies.
 - **Categorization and Prioritization:** Tasks can be assigned categories and priority levels.
