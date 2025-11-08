@@ -27,6 +27,7 @@ Preferred communication style: Simple, everyday language.
 - **Design Philosophy:** Modern, calm, professional aesthetic with a dark theme.
 - **Color Palette:** Primary (`#6C5CE7`), Accent (`#00D1B2`), Surface (gradient `#0b0b0f` to `#1a1520`), Priority Colors (High: `#ff6b6b`, Medium: `#ffd93d`, Low: `#6bcf7f`), Text (`#F8F9FA`).
 - **Visual Elements:** Priority badges, custom-styled section headers, gradient buttons, subtle cards.
+- **Navigation:** Three-dots menu (⋮) in top right corner provides access to Profile, Settings, and Logout via a consolidated menu interface.
 
 **Frontend Architecture:**
 - Built with **Streamlit** and custom CSS for an accessible, Python-native web interface.
