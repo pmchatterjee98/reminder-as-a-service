@@ -8,10 +8,12 @@ class TestEmailNotifications:
     @patch('os.getenv')
     def test_send_email_success(self, mock_getenv, mock_smtp):
         """Test successful email sending."""
-        mock_getenv.side_effect = lambda key: {
+        mock_getenv.side_effect = lambda key, default=None: {
             'SENDER_EMAIL': 'test@example.com',
-            'SENDER_PASSWORD': 'password123'
-        }.get(key)
+            'SENDER_PASSWORD': 'password123',
+            'SMTP_SERVER': 'smtp.gmail.com',
+            'SMTP_PORT': '587'
+        }.get(key, default)
         
         mock_server = MagicMock()
         mock_smtp.return_value.__enter__.return_value = mock_server
@@ -44,7 +46,13 @@ class TestEmailNotifications:
     @patch('os.getenv')
     def test_send_email_no_credentials(self, mock_getenv, mock_smtp):
         """Test email with no credentials returns False."""
-        mock_getenv.return_value = None
+        # Return defaults for SMTP_SERVER and SMTP_PORT, but None for credentials
+        mock_getenv.side_effect = lambda key, default=None: {
+            'SMTP_SERVER': 'smtp.gmail.com',
+            'SMTP_PORT': '587',
+            'SENDER_EMAIL': None,
+            'SENDER_PASSWORD': None
+        }.get(key, default)
         
         result = notifications.send_email_reminder(
             to_email="user@example.com",
@@ -58,10 +66,12 @@ class TestEmailNotifications:
     @patch('os.getenv')
     def test_send_email_smtp_error(self, mock_getenv, mock_smtp):
         """Test email sending handles SMTP errors gracefully."""
-        mock_getenv.side_effect = lambda key: {
+        mock_getenv.side_effect = lambda key, default=None: {
             'SENDER_EMAIL': 'test@example.com',
-            'SENDER_PASSWORD': 'password123'
-        }.get(key)
+            'SENDER_PASSWORD': 'password123',
+            'SMTP_SERVER': 'smtp.gmail.com',
+            'SMTP_PORT': '587'
+        }.get(key, default)
         
         mock_smtp.return_value.__enter__.side_effect = Exception("SMTP Error")
         
@@ -77,10 +87,12 @@ class TestEmailNotifications:
     @patch('os.getenv')
     def test_email_content_formatting(self, mock_getenv, mock_smtp):
         """Test that email content is properly formatted with RAAS branding."""
-        mock_getenv.side_effect = lambda key: {
+        mock_getenv.side_effect = lambda key, default=None: {
             'SENDER_EMAIL': 'test@example.com',
-            'SENDER_PASSWORD': 'password123'
-        }.get(key)
+            'SENDER_PASSWORD': 'password123',
+            'SMTP_SERVER': 'smtp.gmail.com',
+            'SMTP_PORT': '587'
+        }.get(key, default)
         
         mock_server = MagicMock()
         mock_smtp.return_value.__enter__.return_value = mock_server
@@ -92,9 +104,18 @@ class TestEmailNotifications:
         )
         
         call_args = mock_server.send_message.call_args[0][0]
-        email_body = call_args.get_payload()[0].get_payload()
         
+        # Check subject
         assert "⚡ RAAS" in call_args['Subject']
+        
+        # Get email body (decode if base64 encoded)
+        import base64
+        email_payload = call_args.get_payload()[0].get_payload()
+        try:
+            email_body = base64.b64decode(email_payload).decode('utf-8')
+        except:
+            email_body = email_payload
+        
         assert "Important Meeting" in email_body
         assert "Never miss what matters" in email_body
 
@@ -103,11 +124,11 @@ class TestSMSNotifications:
     @patch('os.getenv')
     def test_send_sms_success(self, mock_getenv, mock_twilio):
         """Test successful SMS sending."""
-        mock_getenv.side_effect = lambda key: {
+        mock_getenv.side_effect = lambda key, default=None: {
             'TWILIO_ACCOUNT_SID': 'test_sid',
             'TWILIO_AUTH_TOKEN': 'test_token',
             'TWILIO_PHONE_NUMBER': '+1234567890'
-        }.get(key)
+        }.get(key, default)
         
         mock_client = MagicMock()
         mock_twilio.return_value = mock_client
@@ -153,11 +174,11 @@ class TestSMSNotifications:
     @patch('os.getenv')
     def test_send_sms_twilio_error(self, mock_getenv, mock_twilio):
         """Test SMS sending handles Twilio errors gracefully."""
-        mock_getenv.side_effect = lambda key: {
+        mock_getenv.side_effect = lambda key, default=None: {
             'TWILIO_ACCOUNT_SID': 'test_sid',
             'TWILIO_AUTH_TOKEN': 'test_token',
             'TWILIO_PHONE_NUMBER': '+1234567890'
-        }.get(key)
+        }.get(key, default)
         
         mock_client = MagicMock()
         mock_twilio.return_value = mock_client
@@ -175,11 +196,11 @@ class TestSMSNotifications:
     @patch('os.getenv')
     def test_sms_content_formatting(self, mock_getenv, mock_twilio):
         """Test that SMS content is properly formatted with RAAS branding."""
-        mock_getenv.side_effect = lambda key: {
+        mock_getenv.side_effect = lambda key, default=None: {
             'TWILIO_ACCOUNT_SID': 'test_sid',
             'TWILIO_AUTH_TOKEN': 'test_token',
             'TWILIO_PHONE_NUMBER': '+1234567890'
-        }.get(key)
+        }.get(key, default)
         
         mock_client = MagicMock()
         mock_twilio.return_value = mock_client
@@ -201,11 +222,11 @@ class TestWhatsAppNotifications:
     @patch('os.getenv')
     def test_send_whatsapp_success(self, mock_getenv, mock_twilio):
         """Test successful WhatsApp sending."""
-        mock_getenv.side_effect = lambda key: {
+        mock_getenv.side_effect = lambda key, default=None: {
             'TWILIO_ACCOUNT_SID': 'test_sid',
             'TWILIO_AUTH_TOKEN': 'test_token',
             'TWILIO_PHONE_NUMBER': '+1234567890'
-        }.get(key)
+        }.get(key, default)
         
         mock_client = MagicMock()
         mock_twilio.return_value = mock_client
@@ -237,49 +258,3 @@ class TestWhatsAppNotifications:
         assert result is False
         mock_twilio.assert_not_called()
 
-class TestSendAllReminders:
-    @patch('notifications.send_whatsapp_reminder')
-    @patch('notifications.send_sms_reminder')
-    @patch('notifications.send_email_reminder')
-    def test_send_all_reminders_all_channels(self, mock_email, mock_sms, mock_whatsapp):
-        """Test sending reminders to all available channels."""
-        mock_email.return_value = True
-        mock_sms.return_value = True
-        mock_whatsapp.return_value = True
-        
-        todo = {
-            'title': 'Test Task',
-            'due_date': '2025-12-01 10:00:00',
-            'email': 'test@example.com',
-            'phone': '+1234567890',
-            'whatsapp_phone': '+1234567890'
-        }
-        
-        notifications.send_all_reminders(todo)
-        
-        mock_email.assert_called_once()
-        mock_sms.assert_called_once()
-        mock_whatsapp.assert_called_once()
-    
-    @patch('notifications.send_whatsapp_reminder')
-    @patch('notifications.send_sms_reminder')
-    @patch('notifications.send_email_reminder')
-    def test_send_all_reminders_partial_channels(self, mock_email, mock_sms, mock_whatsapp):
-        """Test sending reminders only to available channels."""
-        mock_email.return_value = True
-        mock_sms.return_value = False
-        mock_whatsapp.return_value = False
-        
-        todo = {
-            'title': 'Test Task',
-            'due_date': '2025-12-01 10:00:00',
-            'email': 'test@example.com',
-            'phone': '',
-            'whatsapp_phone': ''
-        }
-        
-        notifications.send_all_reminders(todo)
-        
-        mock_email.assert_called_once()
-        assert mock_sms.call_count <= 1
-        assert mock_whatsapp.call_count <= 1

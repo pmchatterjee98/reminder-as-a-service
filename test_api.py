@@ -327,7 +327,7 @@ class TestSiriEndpoints:
         assert "7 tasks" in response.text
         assert "And 2 more" in response.text
     
-    @patch.dict(os.environ, {'SIRI_API_KEY': 'test_key_123'})
+    @patch('api.API_KEY', 'test_key_123')
     def test_siri_endpoint_with_api_key_required(self, client):
         """Test Siri endpoint requires API key when set."""
         response = client.get("/api/siri/tasks")
@@ -336,7 +336,7 @@ class TestSiriEndpoints:
         response = client.get("/api/siri/tasks?key=test_key_123")
         assert response.status_code == 200
     
-    @patch.dict(os.environ, {'SIRI_API_KEY': 'test_key_123'})
+    @patch('api.API_KEY', 'test_key_123')
     def test_siri_endpoint_with_wrong_api_key(self, client):
         """Test Siri endpoint rejects wrong API key."""
         response = client.get("/api/siri/say?key=wrong_key")

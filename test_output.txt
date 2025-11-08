@@ -1,0 +1,360 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.13, pytest-8.4.2, pluggy-1.6.0 -- /nix/store/2lcqw1d28vklbk8ikiwad28iq2smwndv-python-wrapped-0.1.0/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/runner/workspace
+configfile: pyproject.toml
+plugins: anyio-4.11.0, asyncio-1.2.0, mock-3.15.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 69 items
+
+test_api.py::TestRootEndpoint::test_root_returns_service_info PASSED     [  1%]
+test_api.py::TestGetTodos::test_get_todos_empty PASSED                   [  2%]
+test_api.py::TestGetTodos::test_get_todos_multiple PASSED                [  4%]
+test_api.py::TestGetTodos::test_get_todos_filter_by_category PASSED      [  5%]
+test_api.py::TestGetTodos::test_get_todos_filter_by_priority PASSED      [  7%]
+test_api.py::TestGetTodos::test_get_todos_filter_by_completed PASSED     [  8%]
+test_api.py::TestGetTodos::test_get_todos_with_limit PASSED              [ 10%]
+test_api.py::TestGetTodoById::test_get_todo_by_id_exists PASSED          [ 11%]
+test_api.py::TestGetTodoById::test_get_todo_by_id_not_found PASSED       [ 13%]
+test_api.py::TestCreateTodo::test_create_todo_minimal PASSED             [ 14%]
+test_api.py::TestCreateTodo::test_create_todo_full PASSED                [ 15%]
+test_api.py::TestCreateTodo::test_create_todo_invalid_data PASSED        [ 17%]
+test_api.py::TestUpdateTodo::test_update_todo_success PASSED             [ 18%]
+test_api.py::TestUpdateTodo::test_update_todo_not_found PASSED           [ 20%]
+test_api.py::TestUpdateTodo::test_update_todo_completion_status PASSED   [ 21%]
+test_api.py::TestDeleteTodo::test_delete_todo_success PASSED             [ 23%]
+test_api.py::TestDeleteTodo::test_delete_todo_not_found PASSED           [ 24%]
+test_api.py::TestToggleTodoComplete::test_toggle_complete PASSED         [ 26%]
+test_api.py::TestToggleTodoComplete::test_toggle_complete_not_found PASSED [ 27%]
+test_api.py::TestGetStats::test_get_stats_empty PASSED                   [ 28%]
+test_api.py::TestGetStats::test_get_stats_with_todos PASSED              [ 30%]
+test_api.py::TestSiriEndpoints::test_siri_tasks_endpoint PASSED          [ 31%]
+test_api.py::TestSiriEndpoints::test_siri_say_endpoint_no_tasks PASSED   [ 33%]
+test_api.py::TestSiriEndpoints::test_siri_say_endpoint_one_task PASSED   [ 34%]
+test_api.py::TestSiriEndpoints::test_siri_say_endpoint_multiple_tasks PASSED [ 36%]
+test_api.py::TestSiriEndpoints::test_siri_endpoint_with_api_key_required FAILED [ 37%]
+test_api.py::TestSiriEndpoints::test_siri_endpoint_with_wrong_api_key FAILED [ 39%]
+test_database.py::TestDatabaseInit::test_init_db_creates_tables PASSED   [ 40%]
+test_database.py::TestDatabaseInit::test_init_db_has_all_columns PASSED  [ 42%]
+test_database.py::TestAddTodo::test_add_todo_basic PASSED                [ 43%]
+test_database.py::TestAddTodo::test_add_todo_with_all_fields PASSED      [ 44%]
+test_database.py::TestAddTodo::test_add_todo_normalizes_date PASSED      [ 46%]
+test_database.py::TestGetTodos::test_get_all_todos_empty PASSED          [ 47%]
+test_database.py::TestGetTodos::test_get_all_todos_multiple PASSED       [ 49%]
+test_database.py::TestGetTodos::test_get_todo_by_id_exists PASSED        [ 50%]
+test_database.py::TestGetTodos::test_get_todo_by_id_not_exists PASSED    [ 52%]
+test_database.py::TestUpdateTodo::test_update_todo_all_fields PASSED     [ 53%]
+test_database.py::TestToggleComplete::test_toggle_complete_to_done PASSED [ 55%]
+test_database.py::TestToggleComplete::test_toggle_complete_back_to_pending PASSED [ 56%]
+test_database.py::TestToggleComplete::test_toggle_complete_recurring_reschedules_daily PASSED [ 57%]
+test_database.py::TestToggleComplete::test_toggle_complete_recurring_reschedules_weekly PASSED [ 59%]
+test_database.py::TestDeleteTodo::test_delete_todo_removes_from_db PASSED [ 60%]
+test_database.py::TestDeleteTodo::test_delete_todo_affects_count PASSED  [ 62%]
+test_database.py::TestGetUpcomingTodos::test_get_upcoming_todos_empty PASSED [ 63%]
+test_database.py::TestGetUpcomingTodos::test_get_upcoming_todos_filters_completed PASSED [ 65%]
+test_database.py::TestGetUpcomingTodos::test_get_upcoming_todos_filters_already_sent PASSED [ 66%]
+test_database.py::TestMarkReminderSent::test_mark_reminder_sent PASSED   [ 68%]
+test_notifications.py::TestEmailNotifications::test_send_email_success FAILED [ 69%]
+test_notifications.py::TestEmailNotifications::test_send_email_no_recipient PASSED [ 71%]
+test_notifications.py::TestEmailNotifications::test_send_email_no_credentials FAILED [ 72%]
+test_notifications.py::TestEmailNotifications::test_send_email_smtp_error FAILED [ 73%]
+test_notifications.py::TestEmailNotifications::test_email_content_formatting FAILED [ 75%]
+test_notifications.py::TestSMSNotifications::test_send_sms_success PASSED [ 76%]
+test_notifications.py::TestSMSNotifications::test_send_sms_no_recipient PASSED [ 78%]
+test_notifications.py::TestSMSNotifications::test_send_sms_no_credentials PASSED [ 79%]
+test_notifications.py::TestSMSNotifications::test_send_sms_twilio_error PASSED [ 81%]
+test_notifications.py::TestSMSNotifications::test_sms_content_formatting PASSED [ 82%]
+test_notifications.py::TestWhatsAppNotifications::test_send_whatsapp_success PASSED [ 84%]
+test_notifications.py::TestWhatsAppNotifications::test_send_whatsapp_no_recipient PASSED [ 85%]
+test_notifications.py::TestSendAllReminders::test_send_all_reminders_all_channels FAILED [ 86%]
+test_notifications.py::TestSendAllReminders::test_send_all_reminders_partial_channels FAILED [ 88%]
+test_notifications_manual.py::test_notifications FAILED                  [ 89%]
+test_scheduler.py::TestCheckUpcomingTodos::test_check_upcoming_todos_no_todos FAILED [ 91%]
+test_scheduler.py::TestCheckUpcomingTodos::test_check_upcoming_todos_sends_reminders FAILED [ 92%]
+test_scheduler.py::TestCheckUpcomingTodos::test_check_upcoming_todos_skips_completed FAILED [ 94%]
+test_scheduler.py::TestCheckUpcomingTodos::test_check_upcoming_todos_skips_already_sent FAILED [ 95%]
+test_scheduler.py::TestCheckUpcomingTodos::test_check_upcoming_todos_respects_reminder_hours FAILED [ 97%]
+test_scheduler.py::TestSchedulerStartStop::test_start_scheduler_creates_scheduler FAILED [ 98%]
+test_scheduler.py::TestSchedulerStartStop::test_stop_scheduler_shuts_down PASSED [100%]
+
+=================================== FAILURES ===================================
+__________ TestSiriEndpoints.test_siri_endpoint_with_api_key_required __________
+test_api.py:334: in test_siri_endpoint_with_api_key_required
+    assert response.status_code == 401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+---------------------------- Captured stdout setup -----------------------------
+Migrating database: Adding whatsapp_phone column...
+Migration complete.
+___________ TestSiriEndpoints.test_siri_endpoint_with_wrong_api_key ____________
+test_api.py:343: in test_siri_endpoint_with_wrong_api_key
+    assert response.status_code == 401
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+---------------------------- Captured stdout setup -----------------------------
+Migrating database: Adding whatsapp_phone column...
+Migration complete.
+________________ TestEmailNotifications.test_send_email_success ________________
+test_notifications.py:19: in test_send_email_success
+    result = notifications.send_email_reminder(
+notifications.py:13: in send_email_reminder
+    smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1124: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1128: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1189: in _execute_mock_call
+    result = effect(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: TestEmailNotifications.test_send_email_success.<locals>.<lambda>() takes 1 positional argument but 2 were given
+____________ TestEmailNotifications.test_send_email_no_credentials _____________
+test_notifications.py:49: in test_send_email_no_credentials
+    result = notifications.send_email_reminder(
+notifications.py:14: in send_email_reminder
+    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: int() argument must be a string, a bytes-like object or a real number, not 'NoneType'
+______________ TestEmailNotifications.test_send_email_smtp_error _______________
+test_notifications.py:68: in test_send_email_smtp_error
+    result = notifications.send_email_reminder(
+notifications.py:13: in send_email_reminder
+    smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1124: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1128: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1189: in _execute_mock_call
+    result = effect(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: TestEmailNotifications.test_send_email_smtp_error.<locals>.<lambda>() takes 1 positional argument but 2 were given
+_____________ TestEmailNotifications.test_email_content_formatting _____________
+test_notifications.py:88: in test_email_content_formatting
+    notifications.send_email_reminder(
+notifications.py:13: in send_email_reminder
+    smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1124: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1128: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1189: in _execute_mock_call
+    result = effect(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: TestEmailNotifications.test_email_content_formatting.<locals>.<lambda>() takes 1 positional argument but 2 were given
+__________ TestSendAllReminders.test_send_all_reminders_all_channels ___________
+test_notifications.py:258: in test_send_all_reminders_all_channels
+    notifications.send_all_reminders(todo)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'notifications' has no attribute 'send_all_reminders'
+________ TestSendAllReminders.test_send_all_reminders_partial_channels _________
+test_notifications.py:281: in test_send_all_reminders_partial_channels
+    notifications.send_all_reminders(todo)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'notifications' has no attribute 'send_all_reminders'
+______________________________ test_notifications ______________________________
+test_notifications_manual.py:25: in test_notifications
+    test_email = input("Enter email address to test (or press Enter to skip): ").strip()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.pythonlibs/lib/python3.11/site-packages/_pytest/capture.py:229: in read
+    raise OSError(
+E   OSError: pytest: reading from stdin while output is captured!  Consider using `-s`.
+----------------------------- Captured stdout call -----------------------------
+============================================================
+⚡ RAAS Notification Test
+============================================================
+
+Please provide test contact information:
+
+Enter email address to test (or press Enter to skip): 
+__________ TestCheckUpcomingTodos.test_check_upcoming_todos_no_todos ___________
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1375: in patched
+    with self.decoration_helper(patched,
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1357: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/contextlib.py:517: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1446: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1419: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'notifications' from '/home/runner/workspace/notifications.py'> does not have the attribute 'send_all_reminders'
+---------------------------- Captured stdout setup -----------------------------
+Migrating database: Adding whatsapp_phone column...
+Migration complete.
+_______ TestCheckUpcomingTodos.test_check_upcoming_todos_sends_reminders _______
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1375: in patched
+    with self.decoration_helper(patched,
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1357: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/contextlib.py:517: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1446: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1419: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'notifications' from '/home/runner/workspace/notifications.py'> does not have the attribute 'send_all_reminders'
+---------------------------- Captured stdout setup -----------------------------
+Migrating database: Adding whatsapp_phone column...
+Migration complete.
+_______ TestCheckUpcomingTodos.test_check_upcoming_todos_skips_completed _______
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1375: in patched
+    with self.decoration_helper(patched,
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1357: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/contextlib.py:517: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1446: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1419: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'notifications' from '/home/runner/workspace/notifications.py'> does not have the attribute 'send_all_reminders'
+---------------------------- Captured stdout setup -----------------------------
+Migrating database: Adding whatsapp_phone column...
+Migration complete.
+_____ TestCheckUpcomingTodos.test_check_upcoming_todos_skips_already_sent ______
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1375: in patched
+    with self.decoration_helper(patched,
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1357: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/contextlib.py:517: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1446: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1419: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'notifications' from '/home/runner/workspace/notifications.py'> does not have the attribute 'send_all_reminders'
+---------------------------- Captured stdout setup -----------------------------
+Migrating database: Adding whatsapp_phone column...
+Migration complete.
+___ TestCheckUpcomingTodos.test_check_upcoming_todos_respects_reminder_hours ___
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1375: in patched
+    with self.decoration_helper(patched,
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1357: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/contextlib.py:517: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1446: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1419: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'notifications' from '/home/runner/workspace/notifications.py'> does not have the attribute 'send_all_reminders'
+---------------------------- Captured stdout setup -----------------------------
+Migrating database: Adding whatsapp_phone column...
+Migration complete.
+________ TestSchedulerStartStop.test_start_scheduler_creates_scheduler _________
+test_scheduler.py:118: in test_start_scheduler_creates_scheduler
+    assert scheduler.reminder_scheduler is not None
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'scheduler' has no attribute 'reminder_scheduler'
+---------------------------- Captured stdout setup -----------------------------
+Migrating database: Adding whatsapp_phone column...
+Migration complete.
+----------------------------- Captured stdout call -----------------------------
+Reminder scheduler started. Checking every hour.
+[2025-11-08 02:24:40.620860] Checking for upcoming todos...
+No upcoming todos requiring reminders.
+=============================== warnings summary ===============================
+api.py:78
+  /home/runner/workspace/api.py:78: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'example'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    title: str = Field(..., min_length=1, max_length=200, description="Title of the todo", example="Team Meeting")
+
+api.py:79
+  /home/runner/workspace/api.py:79: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'example'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    description: Optional[str] = Field(None, max_length=1000, description="Detailed description", example="Discuss Q1 goals and project timeline")
+
+api.py:80
+  /home/runner/workspace/api.py:80: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'example'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    due_date: str = Field(..., description="Due date in ISO format (YYYY-MM-DD HH:MM:SS)", example="2025-11-15 14:30:00")
+
+api.py:81
+  /home/runner/workspace/api.py:81: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'example'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    email: Optional[str] = Field(None, description="Email for notifications", example="user@example.com")
+
+api.py:82
+  /home/runner/workspace/api.py:82: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'example'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    phone: Optional[str] = Field(None, description="Phone number for SMS notifications", example="+1234567890")
+
+api.py:83
+  /home/runner/workspace/api.py:83: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'example'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    whatsapp_phone: Optional[str] = Field(None, description="WhatsApp phone number for notifications", example="+1234567890")
+
+api.py:84
+  /home/runner/workspace/api.py:84: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'example'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    reminder_hours: int = Field(24, ge=1, le=168, description="Hours before due date to send reminder (1-168)", example=24)
+
+api.py:85
+  /home/runner/workspace/api.py:85: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'example'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    category: Optional[str] = Field(None, max_length=50, description="Category for organization", example="Work")
+
+api.py:86
+  /home/runner/workspace/api.py:86: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'example'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    priority: str = Field("Medium", description="Priority level: High, Medium, or Low", example="High")
+
+api.py:88
+  /home/runner/workspace/api.py:88: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'example'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    recurrence_frequency: Optional[str] = Field(None, description="Recurrence frequency: days, weeks, months, years", example="weeks")
+
+api.py:89
+  /home/runner/workspace/api.py:89: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'example'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    recurrence_interval: Optional[int] = Field(None, ge=1, description="Interval for recurrence", example=2)
+
+api.py:110
+  /home/runner/workspace/api.py:110: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class Todo(TodoBase):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED test_api.py::TestSiriEndpoints::test_siri_endpoint_with_api_key_required
+FAILED test_api.py::TestSiriEndpoints::test_siri_endpoint_with_wrong_api_key
+FAILED test_notifications.py::TestEmailNotifications::test_send_email_success
+FAILED test_notifications.py::TestEmailNotifications::test_send_email_no_credentials
+FAILED test_notifications.py::TestEmailNotifications::test_send_email_smtp_error
+FAILED test_notifications.py::TestEmailNotifications::test_email_content_formatting
+FAILED test_notifications.py::TestSendAllReminders::test_send_all_reminders_all_channels
+FAILED test_notifications.py::TestSendAllReminders::test_send_all_reminders_partial_channels
+FAILED test_notifications_manual.py::test_notifications - OSError: pytest: re...
+FAILED test_scheduler.py::TestCheckUpcomingTodos::test_check_upcoming_todos_no_todos
+FAILED test_scheduler.py::TestCheckUpcomingTodos::test_check_upcoming_todos_sends_reminders
+FAILED test_scheduler.py::TestCheckUpcomingTodos::test_check_upcoming_todos_skips_completed
+FAILED test_scheduler.py::TestCheckUpcomingTodos::test_check_upcoming_todos_skips_already_sent
+FAILED test_scheduler.py::TestCheckUpcomingTodos::test_check_upcoming_todos_respects_reminder_hours
+FAILED test_scheduler.py::TestSchedulerStartStop::test_start_scheduler_creates_scheduler
+================= 15 failed, 54 passed, 12 warnings in 10.64s ==================
