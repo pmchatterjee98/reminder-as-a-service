@@ -259,6 +259,53 @@ class TestGetUpcomingTodos:
         upcoming = database.get_upcoming_todos()
         assert upcoming == []
     
+    def test_get_upcoming_todos_within_24_hours(self):
+        """Test that todos within 24 hours are included (automatic reminder)."""
+        now = datetime.now()
+        
+        # Task due in 12 hours - should be included
+        due_12h = now + timedelta(hours=12)
+        todo_id = database.add_todo(
+            "Task due in 12 hours",
+            "",
+            due_12h.strftime("%Y-%m-%d %H:%M:%S")
+        )
+        
+        upcoming = database.get_upcoming_todos()
+        assert len(upcoming) == 1
+        assert upcoming[0]['id'] == todo_id
+    
+    def test_get_upcoming_todos_beyond_24_hours(self):
+        """Test that todos beyond 24 hours are not included."""
+        now = datetime.now()
+        
+        # Task due in 25 hours - should NOT be included
+        due_25h = now + timedelta(hours=25)
+        database.add_todo(
+            "Task due in 25 hours",
+            "",
+            due_25h.strftime("%Y-%m-%d %H:%M:%S")
+        )
+        
+        upcoming = database.get_upcoming_todos()
+        assert len(upcoming) == 0
+    
+    def test_get_upcoming_todos_exactly_24_hours(self):
+        """Test that todos exactly 24 hours away are included."""
+        now = datetime.now()
+        
+        # Task due in exactly 24 hours
+        due_24h = now + timedelta(hours=24)
+        todo_id = database.add_todo(
+            "Task due in 24 hours",
+            "",
+            due_24h.strftime("%Y-%m-%d %H:%M:%S")
+        )
+        
+        upcoming = database.get_upcoming_todos()
+        assert len(upcoming) == 1
+        assert upcoming[0]['id'] == todo_id
+    
     def test_get_upcoming_todos_filters_completed(self):
         """Test that completed todos are not in upcoming."""
         now = datetime.now()
@@ -267,8 +314,7 @@ class TestGetUpcomingTodos:
         todo_id = database.add_todo(
             "Test Task",
             "",
-            future.strftime("%Y-%m-%d %H:%M:%S"),
-            reminder_hours=1
+            future.strftime("%Y-%m-%d %H:%M:%S")
         )
         
         database.toggle_complete(todo_id)
@@ -284,14 +330,32 @@ class TestGetUpcomingTodos:
         todo_id = database.add_todo(
             "Test Task",
             "",
-            future.strftime("%Y-%m-%d %H:%M:%S"),
-            reminder_hours=1
+            future.strftime("%Y-%m-%d %H:%M:%S")
         )
         
         database.mark_reminder_sent(todo_id)
         
         upcoming = database.get_upcoming_todos()
         assert len(upcoming) == 0
+    
+    def test_get_upcoming_todos_multiple_within_window(self):
+        """Test that multiple todos within 24 hours are all included."""
+        now = datetime.now()
+        
+        # Add 3 tasks within 24 hours
+        todo_id1 = database.add_todo("Task 1", "", (now + timedelta(hours=2)).strftime("%Y-%m-%d %H:%M:%S"))
+        todo_id2 = database.add_todo("Task 2", "", (now + timedelta(hours=12)).strftime("%Y-%m-%d %H:%M:%S"))
+        todo_id3 = database.add_todo("Task 3", "", (now + timedelta(hours=23)).strftime("%Y-%m-%d %H:%M:%S"))
+        
+        # Add 1 task beyond 24 hours
+        database.add_todo("Task 4", "", (now + timedelta(hours=30)).strftime("%Y-%m-%d %H:%M:%S"))
+        
+        upcoming = database.get_upcoming_todos()
+        assert len(upcoming) == 3
+        todo_ids = [t['id'] for t in upcoming]
+        assert todo_id1 in todo_ids
+        assert todo_id2 in todo_ids
+        assert todo_id3 in todo_ids
 
 class TestMarkReminderSent:
     def test_mark_reminder_sent(self):
@@ -302,3 +366,78 @@ class TestMarkReminderSent:
         
         todo = database.get_todo_by_id(todo_id)
         assert todo['reminder_sent'] == 1
+
+class TestDeleteCompletedTasks:
+    def test_delete_completed_tasks_none_completed(self):
+        """Test deleting completed tasks when none are completed."""
+        # Add some incomplete tasks
+        database.add_todo("Task 1", "", "2025-12-01 10:00:00")
+        database.add_todo("Task 2", "", "2025-12-02 10:00:00")
+        
+        # Delete completed tasks
+        deleted_count = database.delete_completed_tasks()
+        
+        # Verify no tasks were deleted
+        assert deleted_count == 0
+        todos = database.get_all_todos()
+        assert len(todos) == 2
+    
+    def test_delete_completed_tasks_some_completed(self):
+        """Test deleting completed tasks when some are completed."""
+        # Add tasks
+        todo_id1 = database.add_todo("Task 1", "", "2025-12-01 10:00:00")
+        todo_id2 = database.add_todo("Task 2", "", "2025-12-02 10:00:00")
+        todo_id3 = database.add_todo("Task 3", "", "2025-12-03 10:00:00")
+        
+        # Complete two tasks
+        database.toggle_complete(todo_id1)
+        database.toggle_complete(todo_id3)
+        
+        # Delete completed tasks
+        deleted_count = database.delete_completed_tasks()
+        
+        # Verify 2 tasks were deleted
+        assert deleted_count == 2
+        todos = database.get_all_todos()
+        assert len(todos) == 1
+        assert todos[0]['id'] == todo_id2
+    
+    def test_delete_completed_tasks_all_completed(self):
+        """Test deleting completed tasks when all are completed."""
+        # Add tasks
+        todo_id1 = database.add_todo("Task 1", "", "2025-12-01 10:00:00")
+        todo_id2 = database.add_todo("Task 2", "", "2025-12-02 10:00:00")
+        
+        # Complete all tasks
+        database.toggle_complete(todo_id1)
+        database.toggle_complete(todo_id2)
+        
+        # Delete completed tasks
+        deleted_count = database.delete_completed_tasks()
+        
+        # Verify all tasks were deleted
+        assert deleted_count == 2
+        todos = database.get_all_todos()
+        assert len(todos) == 0
+    
+    def test_delete_completed_tasks_preserves_incomplete(self):
+        """Test that delete_completed_tasks preserves incomplete tasks."""
+        # Add and complete one task
+        todo_id1 = database.add_todo("Completed Task", "", "2025-12-01 10:00:00")
+        database.toggle_complete(todo_id1)
+        
+        # Add incomplete tasks
+        todo_id2 = database.add_todo("Incomplete Task 1", "", "2025-12-02 10:00:00")
+        todo_id3 = database.add_todo("Incomplete Task 2", "", "2025-12-03 10:00:00")
+        
+        # Delete completed tasks
+        deleted_count = database.delete_completed_tasks()
+        
+        # Verify only completed task was deleted
+        assert deleted_count == 1
+        todos = database.get_all_todos()
+        assert len(todos) == 2
+        todo_ids = [t['id'] for t in todos]
+        assert todo_id2 in todo_ids
+        assert todo_id3 in todo_ids
+        assert todo_id1 not in todo_ids
