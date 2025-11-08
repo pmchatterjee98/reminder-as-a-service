@@ -102,7 +102,37 @@ RAAS supports multiple deployment options:
 
 See `DEPLOYMENT.md` for detailed instructions on all deployment options.
 
+## Testing
+
+**Comprehensive Unit Testing:**
+- **66 unit tests** covering all major functionality across 4 test suites
+- **Test Coverage**: Database (25 tests), Notifications (14 tests), API (23 tests), Scheduler (4 tests)
+- **Mocking Strategy**: All external services (SMTP, Twilio) properly mocked for reliable, fast tests
+- **Test Isolation**: Each test suite uses isolated temporary databases
+- **CI/CD Integration**: GitHub Actions workflow for automated testing on push/pull requests
+- **Documentation**: Comprehensive TESTING.md guide with coverage report and best practices
+
+**Test Files:**
+- `test_database.py` - CRUD operations, recurring tasks, filtering, reminders
+- `test_notifications.py` - Email (SMTP), SMS (Twilio), WhatsApp (Twilio)
+- `test_api.py` - REST API endpoints including Siri integration with API key security
+- `test_scheduler.py` - Background job processing and reminder dispatch
+
+**Running Tests:**
+```bash
+pytest                    # Run all tests
+pytest -v                # Verbose output
+pytest --cov=.           # With coverage report
+```
+
 ## Recent Changes
+
+**Comprehensive Unit Testing** (November 2025)
+- Created 66 unit tests covering database, notifications, API, and scheduler functionality
+- Implemented mocking strategy for all external services (SMTP, Twilio API)
+- Added GitHub Actions CI workflow for automated testing on every push
+- Created TESTING.md documentation with coverage metrics and testing guide
+- All tests passing successfully with proper isolation and fixtures
 
 **Mobile Optimization & PWA** (November 2025)
 - Mobile-responsive CSS with media queries for optimal viewing on iPhone/iPad
