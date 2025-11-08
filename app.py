@@ -555,12 +555,16 @@ else:
     
     st.markdown("---")
     
-    # Separate todos into categories
-    overdue = []
-    today = []
-    upcoming = []
-    completed = []
+    # Quick Overview - Bullet Point List
+    st.markdown("""
+    <div style="margin: 1.5rem 0 1rem 0;">
+        <h3 style="color: #6C5CE7; margin: 0;">📝 Quick Overview</h3>
+        <p style="color: rgba(248, 249, 250, 0.5); font-size: 0.85rem; margin-top: 0.25rem;">All reminders at a glance</p>
+    </div>
+    """, unsafe_allow_html=True)
     
+    # Collect filtered todos for bullet list
+    filtered_todos = []
     now = datetime.now()
     
     for todo in todos:
@@ -572,6 +576,52 @@ else:
         if selected_priority != "All" and todo.get('priority', 'Medium') != selected_priority:
             continue
         
+        # Apply completion filter
+        if not show_completed and todo['completed']:
+            continue
+        
+        filtered_todos.append(todo)
+    
+    # Display bullet point list
+    if filtered_todos:
+        bullet_list = []
+        for todo in filtered_todos:
+            # Priority emoji
+            priority_emoji = {"High": "🔴", "Medium": "🟡", "Low": "🟢"}.get(todo.get('priority', 'Medium'), "🟡")
+            
+            # Completion status
+            status_emoji = "✅" if todo['completed'] else "⭐"
+            
+            # Parse due date
+            due_date_str = todo['due_date'].replace(' ', 'T') if ' ' in todo['due_date'] else todo['due_date']
+            due = datetime.fromisoformat(due_date_str)
+            due_str = due.strftime('%b %d, %I:%M %p')
+            
+            # Build bullet
+            category_text = f"[{todo.get('category')}]" if todo.get('category') else ""
+            bullet = f"{status_emoji} {priority_emoji} **{todo['title']}** {category_text} - Due: {due_str}"
+            bullet_list.append(bullet)
+        
+        # Display as markdown list
+        st.markdown("\n".join([f"- {item}" for item in bullet_list]))
+    else:
+        st.info("No reminders match the current filters.")
+    
+    st.markdown("---")
+    st.markdown("""
+    <div style="margin: 1.5rem 0 1rem 0;">
+        <h3 style="color: #00D1B2; margin: 0;">📂 Organized View</h3>
+        <p style="color: rgba(248, 249, 250, 0.5); font-size: 0.85rem; margin-top: 0.25rem;">Reminders grouped by status</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Separate todos into categories
+    overdue = []
+    today = []
+    upcoming = []
+    completed = []
+    
+    for todo in filtered_todos:
         # Handle both formats: 'T' separator and space separator
         due_date_str = todo['due_date'].replace(' ', 'T') if ' ' in todo['due_date'] else todo['due_date']
         due = datetime.fromisoformat(due_date_str)
