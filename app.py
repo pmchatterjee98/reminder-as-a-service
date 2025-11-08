@@ -414,43 +414,105 @@ with col_header2:
     """, unsafe_allow_html=True)
 
 with col_header3:
-    # Profile dropdown in top right
-    with st.popover("👤 Profile", use_container_width=True):
-        st.markdown(f"""
-        <div style="padding: 0.5rem 0;">
-            <h4 style="margin: 0 0 1rem 0; color: #00D1B2;">Your Profile</h4>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Display user information
-        st.write(f"**Name:** {current_user.get('name') or 'Not set'}")
-        st.write(f"**Username:** @{current_user.get('username') or 'Not set'}")
-        st.write(f"**Email:** {current_user.get('email_decrypted') or 'Not set'}")
-        
-        if current_user.get('phone_decrypted'):
-            st.write(f"**Phone:** {current_user['phone_decrypted']}")
-        if current_user.get('whatsapp_decrypted'):
-            st.write(f"**WhatsApp:** {current_user['whatsapp_decrypted']}")
-        
-        st.divider()
-        
-        # Notification preferences
-        st.caption("**Notification Preferences:**")
-        st.caption(f"✉️ Email: {'Enabled' if current_user.get('consent_email') else 'Disabled'}")
-        st.caption(f"📱 SMS: {'Enabled' if current_user.get('consent_sms') else 'Disabled'}")
-        st.caption(f"💬 WhatsApp: {'Enabled' if current_user.get('consent_whatsapp') else 'Disabled'}")
-        
-        st.divider()
-        
-        # Logout button
-        if st.button("🚪 Logout", use_container_width=True, type="primary"):
-            # Set logged_out flag to prevent auto re-authentication
-            st.session_state.logged_out = True
-            # Clear user-specific data
-            st.session_state.user_id = None
-            st.session_state.user_data = None
-            st.session_state.show_onboarding = False
-            st.rerun()
+    # Settings and Profile buttons in top right
+    settings_col, profile_col = st.columns(2)
+    
+    with settings_col:
+        # Settings popover
+        with st.popover("⚙️ Settings", use_container_width=True):
+            st.markdown("""
+            <div style="padding: 0.5rem 0;">
+                <h4 style="margin: 0 0 1rem 0; color: #00D1B2;">Notification Settings</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.write("Enable or disable notification channels:")
+            
+            # Email toggle
+            email_enabled = st.checkbox(
+                "✉️ Email Notifications",
+                value=bool(current_user.get('consent_email')),
+                key="settings_email",
+                help="Receive reminders via email"
+            )
+            
+            # SMS toggle
+            sms_enabled = st.checkbox(
+                "📱 SMS Notifications",
+                value=bool(current_user.get('consent_sms')),
+                key="settings_sms",
+                help="Receive reminders via SMS text messages"
+            )
+            
+            # WhatsApp toggle
+            whatsapp_enabled = st.checkbox(
+                "💬 WhatsApp Notifications",
+                value=bool(current_user.get('consent_whatsapp')),
+                key="settings_whatsapp",
+                help="Receive reminders via WhatsApp"
+            )
+            
+            st.divider()
+            
+            # Save button
+            if st.button("💾 Save Settings", use_container_width=True, type="primary"):
+                from database_auth import update_user_consent
+                
+                # Update consent preferences
+                success = update_user_consent(
+                    user_id=st.session_state.user_id,
+                    consent_email=email_enabled,
+                    consent_sms=sms_enabled,
+                    consent_whatsapp=whatsapp_enabled
+                )
+                
+                if success:
+                    st.success("✅ Settings saved successfully!")
+                    # Refresh user data to reflect changes
+                    from database_auth import get_user_by_id
+                    st.session_state.user_data = get_user_by_id(st.session_state.user_id)
+                    st.rerun()
+                else:
+                    st.error("❌ Failed to save settings. Please try again.")
+    
+    with profile_col:
+        # Profile dropdown
+        with st.popover("👤 Profile", use_container_width=True):
+            st.markdown(f"""
+            <div style="padding: 0.5rem 0;">
+                <h4 style="margin: 0 0 1rem 0; color: #00D1B2;">Your Profile</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Display user information
+            st.write(f"**Name:** {current_user.get('name') or 'Not set'}")
+            st.write(f"**Username:** @{current_user.get('username') or 'Not set'}")
+            st.write(f"**Email:** {current_user.get('email_decrypted') or 'Not set'}")
+            
+            if current_user.get('phone_decrypted'):
+                st.write(f"**Phone:** {current_user['phone_decrypted']}")
+            if current_user.get('whatsapp_decrypted'):
+                st.write(f"**WhatsApp:** {current_user['whatsapp_decrypted']}")
+            
+            st.divider()
+            
+            # Notification preferences (read-only)
+            st.caption("**Notification Preferences:**")
+            st.caption(f"✉️ Email: {'Enabled' if current_user.get('consent_email') else 'Disabled'}")
+            st.caption(f"📱 SMS: {'Enabled' if current_user.get('consent_sms') else 'Disabled'}")
+            st.caption(f"💬 WhatsApp: {'Enabled' if current_user.get('consent_whatsapp') else 'Disabled'}")
+            
+            st.divider()
+            
+            # Logout button
+            if st.button("🚪 Logout", use_container_width=True, type="primary"):
+                # Set logged_out flag to prevent auto re-authentication
+                st.session_state.logged_out = True
+                # Clear user-specific data
+                st.session_state.user_id = None
+                st.session_state.user_data = None
+                st.session_state.show_onboarding = False
+                st.rerun()
 
 # Sidebar for adding/editing todos
 with st.sidebar:
