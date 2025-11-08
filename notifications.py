@@ -3,6 +3,20 @@ import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import Optional
+from datetime import datetime, time
+
+def is_quiet_hours() -> bool:
+    """
+    Check if current time is within quiet hours (12:00 AM - 9:30 AM).
+    
+    Returns:
+        True if within quiet hours, False otherwise
+    """
+    now = datetime.now().time()
+    quiet_start = time(0, 0)  # 12:00 AM
+    quiet_end = time(9, 30)   # 9:30 AM
+    
+    return quiet_start <= now < quiet_end
 
 def send_email_reminder(to_email: str, todo_title: str, due_date: str) -> bool:
     """Send an email reminder for a todo item."""
@@ -64,6 +78,11 @@ def send_sms_reminder(to_phone: str, todo_title: str, due_date: str) -> bool:
     if not to_phone or to_phone.strip() == "":
         return False
     
+    # Check quiet hours (12am-9:30am)
+    if is_quiet_hours():
+        print(f"Quiet hours active (12am-9:30am). SMS to {to_phone} will be sent after 9:30am.")
+        return False
+    
     try:
         from twilio.rest import Client
     except ImportError:
@@ -100,6 +119,11 @@ def send_sms_reminder(to_phone: str, todo_title: str, due_date: str) -> bool:
 def send_whatsapp_reminder(to_whatsapp: str, todo_title: str, due_date: str) -> bool:
     """Send a WhatsApp reminder for a todo item using Twilio WhatsApp API."""
     if not to_whatsapp or to_whatsapp.strip() == "":
+        return False
+    
+    # Check quiet hours (12am-9:30am)
+    if is_quiet_hours():
+        print(f"Quiet hours active (12am-9:30am). WhatsApp to {to_whatsapp} will be sent after 9:30am.")
         return False
     
     try:
