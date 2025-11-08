@@ -913,7 +913,8 @@ def export_to_pdf(todos):
 def display_todo(todo):
     """Display a single todo item with actions or edit form."""
     # Check if this todo is being edited
-    if 'editing_todo' in st.session_state and st.session_state.editing_todo == todo['id']:
+    # Ensure both IDs are compared as strings for consistency
+    if 'editing_todo' in st.session_state and str(st.session_state.editing_todo) == str(todo['id']):
         # Display inline edit form
         st.markdown(f"""
         <div style="background: rgba(108, 92, 231, 0.1); border: 2px solid rgba(108, 92, 231, 0.3); border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
@@ -1123,7 +1124,7 @@ def display_todo(todo):
         
         with btn_col2:
             if st.button("✏️ Edit", key=f"edit_{todo['id']}", use_container_width=True):
-                st.session_state.editing_todo = todo['id']
+                st.session_state.editing_todo = str(todo['id'])  # Ensure string type for consistency
                 st.rerun()
         
         with btn_col3:
