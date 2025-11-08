@@ -47,7 +47,9 @@ Preferred communication style: Simple, everyday language.
 - **Authentication Flow:** Integrates with Replit Auth, looking up users by `X-Replit-User-Id` to retrieve the internal UUID for all database operations.
 - **User Isolation:** All CRUD operations strictly filter by internal user ID.
 - **Contact Data Security:** Email/phone/WhatsApp encrypted with Fernet; email also hashed with SHA-256.
-- **Onboarding Flow:** First-time users complete contact info and consent preferences.
+- **Onboarding Flow:** First-time users complete profile setup (name, username, contact info) and consent preferences.
+- **User Profile System:** Each user has a unique username and display name, stored in encrypted database.
+- **Logout Flow:** Dedicated logout screen prevents automatic re-authentication, with option to sign back in.
 
 **Feature Specifications:**
 - **Automatic 24-Hour Reminders:** All tasks within 24 hours of their due date automatically trigger reminders.

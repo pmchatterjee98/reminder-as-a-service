@@ -30,6 +30,32 @@ if 'user_data' not in st.session_state:
     st.session_state.user_data = None
 if 'show_onboarding' not in st.session_state:
     st.session_state.show_onboarding = False
+if 'logged_out' not in st.session_state:
+    st.session_state.logged_out = False
+
+# Check if user intentionally logged out
+if st.session_state.logged_out:
+    # Show logged out page
+    st.set_page_config(
+        page_title="RAAS — Logged Out",
+        page_icon="⚡",
+        layout="centered"
+    )
+    st.markdown("""
+    <div style="text-align: center; margin-top: 3rem;">
+        <h1 style="color: #6C5CE7; margin-bottom: 1rem;">👋 You've been logged out</h1>
+        <p style="color: rgba(248, 249, 250, 0.7); font-size: 1.1rem;">
+            Thanks for using RAAS!
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("🔐 Sign In Again", use_container_width=True, type="primary"):
+            st.session_state.logged_out = False
+            st.rerun()
+    st.stop()
 
 # Check if user is authenticated via Replit
 if not auth_context.is_authenticated:
@@ -80,6 +106,12 @@ if st.session_state.show_onboarding:
     st.info(f"👋 Hello, **{auth_context.user_name}**! Let's set up your account.")
     
     with st.form("onboarding_form"):
+        st.subheader("👤 Profile Information")
+        st.write("Tell us about yourself.")
+        
+        name = st.text_input("Full Name *", placeholder="John Doe", value=auth_context.user_name or "")
+        username = st.text_input("Username *", placeholder="Choose a unique username")
+        
         st.subheader("📧 Contact Information")
         st.write("We'll use this information to send you reminders.")
         
@@ -99,12 +131,14 @@ if st.session_state.show_onboarding:
         submitted = st.form_submit_button("Complete Setup", use_container_width=True)
         
         if submitted:
-            if email:
-                # Create user with contact info and consents
+            if email and name and username:
+                # Create user with profile, contact info and consents
                 user_id = database_auth.create_user(
                     email=email,
                     auth_provider='replit',
                     auth_provider_id=auth_context.replit_user_id,
+                    username=username,
+                    name=name,
                     phone=phone if phone else None,
                     whatsapp=whatsapp if whatsapp else None,
                     consent_email=consent_email,
@@ -119,9 +153,9 @@ if st.session_state.show_onboarding:
                     st.success("✅ Account created successfully!")
                     st.rerun()
                 else:
-                    st.error("❌ Failed to create account. Please try again or contact support.")
+                    st.error("❌ Failed to create account. Username may already be taken or there was an error.")
             else:
-                st.error("⚠️ Please provide your email address.")
+                st.error("⚠️ Please provide your name, username, and email address.")
     
     st.stop()
 
@@ -358,19 +392,65 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Header with branding and personalized greeting
-user_name = auth_context.user_name or "there"
-st.markdown(f"""
-<div style="text-align: center; margin-bottom: 2rem;">
-    <h1 style="margin-bottom: 0.5rem;">⚡ RAAS</h1>
-    <p style="color: rgba(248, 249, 250, 0.7); font-size: 1.1rem; margin-top: 0;">
-        Reminder as a Service — Never miss what matters
-    </p>
-    <p style="color: #00D1B2; font-size: 1.2rem; margin-top: 1rem; font-weight: 500;">
-        👋 Hello, {user_name}!
-    </p>
-</div>
-""", unsafe_allow_html=True)
+# Header with branding and profile dropdown
+col_header1, col_header2, col_header3 = st.columns([1, 3, 1])
+
+with col_header1:
+    st.write("")  # Spacer
+
+with col_header2:
+    # Centered branding
+    user_display_name = current_user.get('name') or current_user.get('username') or auth_context.user_name or "there"
+    st.markdown(f"""
+    <div style="text-align: center; margin-bottom: 1rem;">
+        <h1 style="margin-bottom: 0.5rem;">⚡ RAAS</h1>
+        <p style="color: rgba(248, 249, 250, 0.7); font-size: 1.1rem; margin-top: 0;">
+            Reminder as a Service — Never miss what matters
+        </p>
+        <p style="color: #00D1B2; font-size: 1.2rem; margin-top: 1rem; font-weight: 500;">
+            👋 Hello, {user_display_name}!
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col_header3:
+    # Profile dropdown in top right
+    with st.popover("👤 Profile", use_container_width=True):
+        st.markdown(f"""
+        <div style="padding: 0.5rem 0;">
+            <h4 style="margin: 0 0 1rem 0; color: #00D1B2;">Your Profile</h4>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Display user information
+        st.write(f"**Name:** {current_user.get('name') or 'Not set'}")
+        st.write(f"**Username:** @{current_user.get('username') or 'Not set'}")
+        st.write(f"**Email:** {current_user.get('email_decrypted') or 'Not set'}")
+        
+        if current_user.get('phone_decrypted'):
+            st.write(f"**Phone:** {current_user['phone_decrypted']}")
+        if current_user.get('whatsapp_decrypted'):
+            st.write(f"**WhatsApp:** {current_user['whatsapp_decrypted']}")
+        
+        st.divider()
+        
+        # Notification preferences
+        st.caption("**Notification Preferences:**")
+        st.caption(f"✉️ Email: {'Enabled' if current_user.get('consent_email') else 'Disabled'}")
+        st.caption(f"📱 SMS: {'Enabled' if current_user.get('consent_sms') else 'Disabled'}")
+        st.caption(f"💬 WhatsApp: {'Enabled' if current_user.get('consent_whatsapp') else 'Disabled'}")
+        
+        st.divider()
+        
+        # Logout button
+        if st.button("🚪 Logout", use_container_width=True, type="primary"):
+            # Set logged_out flag to prevent auto re-authentication
+            st.session_state.logged_out = True
+            # Clear user-specific data
+            st.session_state.user_id = None
+            st.session_state.user_data = None
+            st.session_state.show_onboarding = False
+            st.rerun()
 
 # Sidebar for adding/editing todos
 with st.sidebar:
@@ -511,52 +591,74 @@ def export_to_csv(todos):
     return output.getvalue()
 
 def export_to_pdf(todos):
-    """Export todos to PDF format."""
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(0, 10, 'Todo List Export', ln=True, align='C')
-    pdf.ln(5)
-    
-    pdf.set_font("Arial", '', 10)
-    pdf.cell(0, 10, f'Generated on: {datetime.now().strftime("%Y-%m-%d %H:%M")}', ln=True)
-    pdf.ln(5)
-    
-    # Add todos
-    for todo in todos:
-        pdf.set_font("Arial", 'B', 12)
-        priority_text = {'High': '[HIGH]', 'Medium': '[MED]', 'Low': '[LOW]'}.get(todo.get('priority', 'Medium'), '[MED]')
-        status_text = '[DONE]' if todo['completed'] else '[TODO]'
-        
-        title_line = f"{status_text} {priority_text} {todo['title']}"
-        pdf.cell(0, 10, title_line, ln=True)
+    """Export todos to PDF format with error handling for special characters."""
+    try:
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", 'B', 16)
+        pdf.cell(0, 10, 'Todo List Export', ln=True, align='C')
+        pdf.ln(5)
         
         pdf.set_font("Arial", '', 10)
-        if todo.get('category'):
-            pdf.cell(0, 6, f"Category: {todo['category']}", ln=True)
+        pdf.cell(0, 10, f'Generated on: {datetime.now().strftime("%Y-%m-%d %H:%M")}', ln=True)
+        pdf.ln(5)
         
-        pdf.cell(0, 6, f"Due: {todo['due_date']}", ln=True)
+        # Add todos
+        for todo in todos:
+            pdf.set_font("Arial", 'B', 12)
+            priority_text = {'High': '[HIGH]', 'Medium': '[MED]', 'Low': '[LOW]'}.get(todo.get('priority', 'Medium'), '[MED]')
+            status_text = '[DONE]' if todo['completed'] else '[TODO]'
+            
+            # Handle special characters by encoding to latin-1
+            title = str(todo['title']).encode('latin-1', 'ignore').decode('latin-1')
+            title_line = f"{status_text} {priority_text} {title}"
+            pdf.cell(0, 10, title_line, ln=True)
+            
+            pdf.set_font("Arial", '', 10)
+            if todo.get('category'):
+                category = str(todo['category']).encode('latin-1', 'ignore').decode('latin-1')
+                pdf.cell(0, 6, f"Category: {category}", ln=True)
+            
+            pdf.cell(0, 6, f"Due: {todo['due_date']}", ln=True)
+            
+            if todo.get('description'):
+                description = str(todo['description']).encode('latin-1', 'ignore').decode('latin-1')
+                pdf.multi_cell(0, 6, f"Description: {description}")
+            
+            if todo.get('is_recurring'):
+                freq = todo.get('recurrence_frequency', 'days')
+                interval = todo.get('recurrence_interval', 1)
+                pdf.cell(0, 6, f"Recurring: Every {interval} {freq}", ln=True)
+            
+            if todo.get('email') or todo.get('phone'):
+                contact = []
+                if todo.get('email'):
+                    email = str(todo['email']).encode('latin-1', 'ignore').decode('latin-1')
+                    contact.append(f"Email: {email}")
+                if todo.get('phone'):
+                    phone = str(todo['phone']).encode('latin-1', 'ignore').decode('latin-1')
+                    contact.append(f"Phone: {phone}")
+                pdf.cell(0, 6, ' | '.join(contact), ln=True)
+            
+            pdf.ln(3)
         
-        if todo.get('description'):
-            pdf.multi_cell(0, 6, f"Description: {todo['description']}")
-        
-        if todo.get('is_recurring'):
-            freq = todo.get('recurrence_frequency', 'days')
-            interval = todo.get('recurrence_interval', 1)
-            pdf.cell(0, 6, f"Recurring: Every {interval} {freq}", ln=True)
-        
-        if todo.get('email') or todo.get('phone'):
-            contact = []
-            if todo.get('email'):
-                contact.append(f"Email: {todo['email']}")
-            if todo.get('phone'):
-                contact.append(f"Phone: {todo['phone']}")
-            pdf.cell(0, 6, ' | '.join(contact), ln=True)
-        
-        pdf.ln(3)
-    
-    # output() returns bytearray in fpdf2, convert to bytes for streamlit
-    return bytes(pdf.output())
+        # output() returns string in some fpdf2 versions, encode to bytes for streamlit
+        pdf_output = pdf.output()
+        if isinstance(pdf_output, str):
+            return pdf_output.encode('latin-1')
+        return bytes(pdf_output)
+    except Exception as e:
+        # Return error message as PDF
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", 'B', 14)
+        pdf.cell(0, 10, 'PDF Export Error', ln=True)
+        pdf.set_font("Arial", '', 10)
+        pdf.multi_cell(0, 10, f'An error occurred: {str(e)}. Please try CSV export instead or contact support.')
+        pdf_output = pdf.output()
+        if isinstance(pdf_output, str):
+            return pdf_output.encode('latin-1')
+        return bytes(pdf_output)
 
 def display_todo(todo):
     """Display a single todo item with actions or edit form."""

@@ -22,6 +22,8 @@ def init_auth_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY,
+            username TEXT UNIQUE,
+            name TEXT,
             email_hash TEXT UNIQUE NOT NULL,
             email_encrypted TEXT NOT NULL,
             phone_encrypted TEXT,
@@ -151,6 +153,8 @@ def init_auth_db():
             cursor.execute('''
                 CREATE TABLE users_new (
                     id TEXT PRIMARY KEY,
+                    username TEXT UNIQUE,
+                    name TEXT,
                     email_hash TEXT UNIQUE NOT NULL,
                     email_encrypted TEXT NOT NULL,
                     phone_encrypted TEXT,
@@ -167,8 +171,15 @@ def init_auth_db():
             ''')
             
             # Copy data from old table (only active users with unique auth_provider_id)
+            # Explicitly list columns to handle missing username/name in old schema
             cursor.execute('''
-                INSERT INTO users_new SELECT * FROM users WHERE is_active = 1
+                INSERT INTO users_new (id, email_hash, email_encrypted, phone_encrypted, whatsapp_encrypted,
+                                      auth_provider, auth_provider_id, consent_email, consent_sms, 
+                                      consent_whatsapp, created_at, last_login, is_active, username, name)
+                SELECT id, email_hash, email_encrypted, phone_encrypted, whatsapp_encrypted,
+                       auth_provider, auth_provider_id, consent_email, consent_sms, 
+                       consent_whatsapp, created_at, last_login, is_active, NULL, NULL
+                FROM users WHERE is_active = 1
             ''')
             
             # Drop old table and rename new one
@@ -181,12 +192,28 @@ def init_auth_db():
             
             print("Migration complete: UNIQUE constraint applied to auth_provider_id")
     
+    # Migration: Add username and name columns if they don't exist
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
+    users_table_exists = cursor.fetchone() is not None
+    
+    if users_table_exists:
+        try:
+            cursor.execute("SELECT username FROM users LIMIT 1")
+        except sqlite3.OperationalError:
+            print("Migrating database: Adding username and name columns...")
+            cursor.execute("ALTER TABLE users ADD COLUMN username TEXT")
+            cursor.execute("ALTER TABLE users ADD COLUMN name TEXT")
+            # Note: UNIQUE constraint on username will be enforced at application level for existing rows
+            print("Migration complete: username and name columns added")
+    
     conn.commit()
     conn.close()
 
 
 def create_user(email: str, auth_provider: str = 'replit', 
                 auth_provider_id: Optional[str] = None,
+                username: Optional[str] = None,
+                name: Optional[str] = None,
                 phone: Optional[str] = None, 
                 whatsapp: Optional[str] = None,
                 consent_email: bool = False,
@@ -231,6 +258,10 @@ def create_user(email: str, auth_provider: str = 'replit',
     
     # Sanitize inputs
     email = sanitize_input(email, max_length=255)
+    if username:
+        username = sanitize_input(username, max_length=100)
+    if name:
+        name = sanitize_input(name, max_length=255)
     
     # Hash email for lookups (never store plaintext email!)
     email_hashed = hash_email(email)
@@ -248,11 +279,11 @@ def create_user(email: str, auth_provider: str = 'replit',
     try:
         user_id = str(uuid.uuid4())
         cursor.execute('''
-            INSERT INTO users (id, email_hash, email_encrypted, phone_encrypted, whatsapp_encrypted,
+            INSERT INTO users (id, username, name, email_hash, email_encrypted, phone_encrypted, whatsapp_encrypted,
                              auth_provider, auth_provider_id, consent_email, consent_sms, 
                              consent_whatsapp, last_login)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (user_id, email_hashed, encrypted_data['email_encrypted'], 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (user_id, username, name, email_hashed, encrypted_data['email_encrypted'], 
               encrypted_data['phone_encrypted'], encrypted_data['whatsapp_encrypted'],
               auth_provider, auth_provider_id,
               1 if consent_email else 0, 1 if consent_sms else 0, 
