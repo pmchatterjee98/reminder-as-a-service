@@ -12,7 +12,7 @@
 - Support for recurring tasks (daily, weekly, monthly, yearly).
 - Task organization by categories and priority levels.
 - Filtering options for category, priority, and completion status.
-- Export functionality to CSV or PDF.
+- Export functionality to CSV format.
 - Modern dark-themed UI with custom branding.
 - FastAPI-based REST API with OpenAPI/Swagger documentation.
 
@@ -59,13 +59,13 @@ Preferred communication style: Simple, everyday language.
 - **Recurring Task Management:** Automatic rescheduling based on daily, weekly, monthly, or yearly frequencies.
 - **Categorization and Prioritization:** Tasks can be assigned categories and priority levels.
 - **Advanced Filtering:** Users can filter tasks by category, priority, and completion status.
-- **Data Export:** Functionality to export todo lists to CSV and PDF formats.
+- **Data Export:** Functionality to export todo lists to CSV format.
 - **Inline Editing:** Edit forms appear directly at the task location.
 - **Personalized Experience:** Dashboard greets users by their stored name for a professional, personalized feel.
 - **Smart Contact Management:** Contact information pulled from user profile - no duplicate entry needed when creating reminders.
 - **12-Hour Time Format:** Intuitive time input using Hour (1-12), Minute (00-59), and AM/PM selectors with exact minute precision.
 - **Horizontal Action Buttons:** Complete, Edit, and Delete buttons displayed below each task with proper spacing to prevent text wrapping.
-- **Editable Profile Settings:** Users can update their name, username, email, phone, and WhatsApp information directly from the settings panel. All changes are validated, encrypted, and persisted to the database with comprehensive error handling.
+- **Editable Profile:** Users can update all personal information (name, username, email, phone, WhatsApp) and notification preferences directly from the Profile page. All changes are validated, encrypted, and persisted to the database with comprehensive error handling.
 - **Mobile Browser Alarms:** Real-time browser notifications for tasks due within 24 hours on mobile and desktop. Users enable via Settings → Mobile Alarms. Notifications appear 1 hour before task due time (or immediately if less than 1 hour remaining) with vibration alerts, priority indicators, and task details. Works while app is open in a browser tab. Automatically re-schedules on tab focus.
 
 **Mobile Support:**
@@ -89,5 +89,5 @@ Preferred communication style: Simple, everyday language.
 - **Database:** `sqlite3`
 - **Scheduling:** `apscheduler`
 - **Email & SMS:** `smtplib`, `email.mime`, `twilio`
-- **Export:** `csv`, `fpdf2`
+- **Export:** `csv`
 - **Encryption:** `cryptography` (for Fernet)

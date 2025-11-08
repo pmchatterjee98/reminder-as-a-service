@@ -6,7 +6,6 @@ import database_auth
 import scheduler
 import csv
 import io
-from fpdf import FPDF
 from auth_replit import ReplitAuthContext, auth_manager, get_login_html
 
 # Initialize databases
@@ -455,7 +454,7 @@ with col_header3:
                 st.session_state.show_onboarding = False
                 st.rerun()
         
-        # Profile view
+        # Profile view - now fully editable
         elif st.session_state.menu_view == 'profile':
             # Back button
             if st.button("← Back", use_container_width=True):
@@ -465,26 +464,126 @@ with col_header3:
             st.markdown(f"""
             <div style="padding: 0.5rem 0;">
                 <h4 style="margin: 0 0 1rem 0; color: #00D1B2;">Your Profile</h4>
+                <p style="color: #a0a0a0; font-size: 0.9rem; margin: 0;">Edit your personal information and notification preferences</p>
             </div>
             """, unsafe_allow_html=True)
             
-            # Display user information
-            st.write(f"**Name:** {current_user.get('name') or 'Not set'}")
-            st.write(f"**Username:** @{current_user.get('username') or 'Not set'}")
-            st.write(f"**Email:** {current_user.get('email_decrypted') or 'Not set'}")
+            # Profile Information Section
+            st.write("**Personal Information**")
             
-            if current_user.get('phone_decrypted'):
-                st.write(f"**Phone:** {current_user['phone_decrypted']}")
-            if current_user.get('whatsapp_decrypted'):
-                st.write(f"**WhatsApp:** {current_user['whatsapp_decrypted']}")
+            # Name
+            profile_name = st.text_input(
+                "Full Name",
+                value=current_user.get('name') or '',
+                key="profile_name",
+                placeholder="Your full name"
+            )
+            
+            # Username
+            profile_username = st.text_input(
+                "Username",
+                value=current_user.get('username') or '',
+                key="profile_username",
+                placeholder="Your username (without @)"
+            )
+            
+            # Email
+            profile_email = st.text_input(
+                "Email",
+                value=current_user.get('email_decrypted') or '',
+                key="profile_email",
+                placeholder="your.email@example.com"
+            )
+            
+            # Phone
+            profile_phone = st.text_input(
+                "Phone (SMS)",
+                value=current_user.get('phone_decrypted') or '',
+                key="profile_phone",
+                placeholder="+1234567890"
+            )
+            
+            # WhatsApp
+            profile_whatsapp = st.text_input(
+                "WhatsApp",
+                value=current_user.get('whatsapp_decrypted') or '',
+                key="profile_whatsapp",
+                placeholder="+1234567890"
+            )
             
             st.divider()
             
-            # Notification preferences (read-only)
-            st.caption("**Notification Preferences:**")
-            st.caption(f"✉️ Email: {'Enabled' if current_user.get('consent_email') else 'Disabled'}")
-            st.caption(f"📱 SMS: {'Enabled' if current_user.get('consent_sms') else 'Disabled'}")
-            st.caption(f"💬 WhatsApp: {'Enabled' if current_user.get('consent_whatsapp') else 'Disabled'}")
+            # Notification Preferences Section
+            st.write("**Notification Preferences**")
+            st.caption("Enable or disable notification channels:")
+            
+            # Email toggle
+            profile_email_enabled = st.checkbox(
+                "✉️ Email Notifications",
+                value=bool(current_user.get('consent_email')),
+                key="profile_email_consent",
+                help="Receive reminders via email"
+            )
+            
+            # SMS toggle
+            profile_sms_enabled = st.checkbox(
+                "📱 SMS Notifications",
+                value=bool(current_user.get('consent_sms')),
+                key="profile_sms",
+                help="Receive reminders via SMS text messages"
+            )
+            
+            # WhatsApp toggle
+            profile_whatsapp_enabled = st.checkbox(
+                "💬 WhatsApp Notifications",
+                value=bool(current_user.get('consent_whatsapp')),
+                key="profile_whatsapp_consent",
+                help="Receive reminders via WhatsApp"
+            )
+            
+            st.divider()
+            
+            # Save changes button
+            if st.button("💾 Save Changes", type="primary", use_container_width=True):
+                try:
+                    # Update all profile components
+                    success_profile = database_auth.update_user_profile(
+                        user_id=current_user_id,
+                        name=profile_name.strip() if profile_name else None,
+                        username=profile_username.strip() if profile_username else None
+                    )
+                    
+                    success_contact = database_auth.update_user_contact_info(
+                        user_id=current_user_id,
+                        email=profile_email.strip() if profile_email else None,
+                        phone=profile_phone.strip() if profile_phone else None,
+                        whatsapp=profile_whatsapp.strip() if profile_whatsapp else None
+                    )
+                    
+                    success_consent = database_auth.update_user_consent(
+                        user_id=current_user_id,
+                        consent_email=profile_email_enabled,
+                        consent_sms=profile_sms_enabled,
+                        consent_whatsapp=profile_whatsapp_enabled
+                    )
+                    
+                    if success_profile or success_contact or success_consent:
+                        # Refresh user data immediately from database
+                        fresh_user_data = database_auth.get_user_by_id(current_user_id)
+                        if fresh_user_data:
+                            st.session_state.user_data = fresh_user_data
+                            print(f"Profile updated: {fresh_user_data.get('name')}, {fresh_user_data.get('username')}")
+                        
+                        st.success("✅ Profile updated successfully!")
+                        # Small delay to show success message
+                        import time
+                        time.sleep(0.5)
+                        st.rerun()
+                    else:
+                        st.error("❌ Failed to update profile. Please try again.")
+                except Exception as e:
+                    st.error(f"❌ Error: {str(e)}")
+                    print(f"Profile update error: {e}")
         
         # Settings view
         elif st.session_state.menu_view == 'settings':
@@ -862,76 +961,6 @@ def export_to_csv(todos):
         ])
     
     return output.getvalue()
-
-def export_to_pdf(todos):
-    """Export todos to PDF format with error handling for special characters."""
-    try:
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", 'B', 16)
-        pdf.cell(0, 10, 'Todo List Export', ln=True, align='C')
-        pdf.ln(5)
-        
-        pdf.set_font("Arial", '', 10)
-        pdf.cell(0, 10, f'Generated on: {datetime.now().strftime("%Y-%m-%d %H:%M")}', ln=True)
-        pdf.ln(5)
-        
-        # Add todos
-        for todo in todos:
-            pdf.set_font("Arial", 'B', 12)
-            priority_text = {'High': '[HIGH]', 'Medium': '[MED]', 'Low': '[LOW]'}.get(todo.get('priority', 'Medium'), '[MED]')
-            status_text = '[DONE]' if todo['completed'] else '[TODO]'
-            
-            # Handle special characters by encoding to latin-1
-            title = str(todo['title']).encode('latin-1', 'ignore').decode('latin-1')
-            title_line = f"{status_text} {priority_text} {title}"
-            pdf.cell(0, 10, title_line, ln=True)
-            
-            pdf.set_font("Arial", '', 10)
-            if todo.get('category'):
-                category = str(todo['category']).encode('latin-1', 'ignore').decode('latin-1')
-                pdf.cell(0, 6, f"Category: {category}", ln=True)
-            
-            pdf.cell(0, 6, f"Due: {todo['due_date']}", ln=True)
-            
-            if todo.get('description'):
-                description = str(todo['description']).encode('latin-1', 'ignore').decode('latin-1')
-                pdf.multi_cell(0, 6, f"Description: {description}")
-            
-            if todo.get('is_recurring'):
-                freq = todo.get('recurrence_frequency', 'days')
-                interval = todo.get('recurrence_interval', 1)
-                pdf.cell(0, 6, f"Recurring: Every {interval} {freq}", ln=True)
-            
-            if todo.get('email') or todo.get('phone'):
-                contact = []
-                if todo.get('email'):
-                    email = str(todo['email']).encode('latin-1', 'ignore').decode('latin-1')
-                    contact.append(f"Email: {email}")
-                if todo.get('phone'):
-                    phone = str(todo['phone']).encode('latin-1', 'ignore').decode('latin-1')
-                    contact.append(f"Phone: {phone}")
-                pdf.cell(0, 6, ' | '.join(contact), ln=True)
-            
-            pdf.ln(3)
-        
-        # output() returns string in some fpdf2 versions, encode to bytes for streamlit
-        pdf_output = pdf.output()
-        if isinstance(pdf_output, str):
-            return pdf_output.encode('latin-1')
-        return bytes(pdf_output)
-    except Exception as e:
-        # Return error message as PDF
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", 'B', 14)
-        pdf.cell(0, 10, 'PDF Export Error', ln=True)
-        pdf.set_font("Arial", '', 10)
-        pdf.multi_cell(0, 10, f'An error occurred: {str(e)}. Please try CSV export instead or contact support.')
-        pdf_output = pdf.output()
-        if isinstance(pdf_output, str):
-            return pdf_output.encode('latin-1')
-        return bytes(pdf_output)
 
 def display_todo(todo):
     """Display a single todo item with actions or edit form."""
@@ -1321,31 +1350,18 @@ else:
     with col3:
         selected_priority = st.selectbox("Priority", priorities)
     
-    # Export buttons
+    # Export button
     st.markdown("---")
-    col_exp1, col_exp2, col_exp3 = st.columns([1, 1, 4])
     
-    with col_exp1:
-        if st.button("📥 CSV", use_container_width=True):
-            csv_data = export_to_csv(todos)
-            st.download_button(
-                label="Download CSV",
-                data=csv_data,
-                file_name=f"todos_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv",
-                key="download_csv"
-            )
-    
-    with col_exp2:
-        if st.button("📄 PDF", use_container_width=True):
-            pdf_data = export_to_pdf(todos)
-            st.download_button(
-                label="Download PDF",
-                data=pdf_data,
-                file_name=f"todos_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
-                mime="application/pdf",
-                key="download_pdf"
-            )
+    if st.button("📥 Export to CSV", use_container_width=False):
+        csv_data = export_to_csv(todos)
+        st.download_button(
+            label="Download CSV",
+            data=csv_data,
+            file_name=f"todos_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+            mime="text/csv",
+            key="download_csv"
+        )
     
     st.markdown("---")
     
