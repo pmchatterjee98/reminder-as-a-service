@@ -495,17 +495,64 @@ with col_header3:
             
             st.markdown("""
             <div style="padding: 0.5rem 0;">
-                <h4 style="margin: 0 0 1rem 0; color: #00D1B2;">Notification Settings</h4>
+                <h4 style="margin: 0 0 1rem 0; color: #00D1B2;">Settings</h4>
             </div>
             """, unsafe_allow_html=True)
             
-            st.write("Enable or disable notification channels:")
+            # Profile Information Section
+            st.write("**Profile Information**")
+            
+            # Name
+            name_input = st.text_input(
+                "Full Name",
+                value=current_user.get('name') or '',
+                key="settings_name",
+                placeholder="Your full name"
+            )
+            
+            # Username
+            username_input = st.text_input(
+                "Username",
+                value=current_user.get('username') or '',
+                key="settings_username",
+                placeholder="Your username (without @)"
+            )
+            
+            # Email
+            email_input = st.text_input(
+                "Email",
+                value=current_user.get('email_decrypted') or '',
+                key="settings_email_input",
+                placeholder="your.email@example.com"
+            )
+            
+            # Phone
+            phone_input = st.text_input(
+                "Phone (SMS)",
+                value=current_user.get('phone_decrypted') or '',
+                key="settings_phone",
+                placeholder="+1234567890"
+            )
+            
+            # WhatsApp
+            whatsapp_input = st.text_input(
+                "WhatsApp",
+                value=current_user.get('whatsapp_decrypted') or '',
+                key="settings_whatsapp_input",
+                placeholder="+1234567890"
+            )
+            
+            st.divider()
+            
+            # Notification Preferences Section
+            st.write("**Notification Preferences**")
+            st.caption("Enable or disable notification channels:")
             
             # Email toggle
             email_enabled = st.checkbox(
                 "✉️ Email Notifications",
                 value=bool(current_user.get('consent_email')),
-                key="settings_email",
+                key="settings_email_consent",
                 help="Receive reminders via email"
             )
             
@@ -521,7 +568,7 @@ with col_header3:
             whatsapp_enabled = st.checkbox(
                 "💬 WhatsApp Notifications",
                 value=bool(current_user.get('consent_whatsapp')),
-                key="settings_whatsapp",
+                key="settings_whatsapp_consent",
                 help="Receive reminders via WhatsApp"
             )
             
@@ -529,25 +576,62 @@ with col_header3:
             
             # Save button
             if st.button("💾 Save Settings", use_container_width=True, type="primary"):
-                from database_auth import update_user_consent
+                from database_auth import update_user_consent, update_user_contact_info, update_user_profile, get_user_by_id
+                
+                errors = []
+                
+                # Update profile (name and username)
+                if name_input or username_input:
+                    # Only update if changed
+                    name_changed = name_input != (current_user.get('name') or '')
+                    username_changed = username_input != (current_user.get('username') or '')
+                    
+                    if name_changed or username_changed:
+                        profile_success = update_user_profile(
+                            user_id=st.session_state.user_id,
+                            name=name_input if name_changed else None,
+                            username=username_input if username_changed else None
+                        )
+                        if not profile_success:
+                            errors.append("Failed to update profile (username may already be taken)")
+                
+                # Update contact info (email, phone, whatsapp)
+                contact_changed = (
+                    email_input != (current_user.get('email_decrypted') or '') or
+                    phone_input != (current_user.get('phone_decrypted') or '') or
+                    whatsapp_input != (current_user.get('whatsapp_decrypted') or '')
+                )
+                
+                if contact_changed:
+                    contact_success = update_user_contact_info(
+                        user_id=st.session_state.user_id,
+                        email=email_input if email_input else None,
+                        phone=phone_input if phone_input else None,
+                        whatsapp=whatsapp_input if whatsapp_input else None
+                    )
+                    if not contact_success:
+                        errors.append("Failed to update contact info (check email/phone format)")
                 
                 # Update consent preferences
-                success = update_user_consent(
+                consent_success = update_user_consent(
                     user_id=st.session_state.user_id,
                     consent_email=email_enabled,
                     consent_sms=sms_enabled,
                     consent_whatsapp=whatsapp_enabled
                 )
                 
-                if success:
+                if not consent_success:
+                    errors.append("Failed to update notification preferences")
+                
+                if errors:
+                    for error in errors:
+                        st.error(f"❌ {error}")
+                else:
                     st.success("✅ Settings saved successfully!")
                     # Refresh user data to reflect changes
-                    from database_auth import get_user_by_id
                     st.session_state.user_data = get_user_by_id(st.session_state.user_id)
                     st.session_state.menu_view = 'main'
                     st.rerun()
-                else:
-                    st.error("❌ Failed to save settings. Please try again.")
 
 # Sidebar for adding/editing todos
 with st.sidebar:
