@@ -228,13 +228,15 @@ def get_login_html(message: str = "Please sign in with your Replit account") -> 
                 align-items: center;
                 height: 100vh;
                 margin: 0;
+                padding: 20px;
             }}
             .login-container {{
                 background: rgba(255, 255, 255, 0.05);
                 border-radius: 16px;
                 padding: 48px;
                 text-align: center;
-                max-width: 400px;
+                max-width: 450px;
+                width: 100%;
                 backdrop-filter: blur(10px);
                 border: 1px solid rgba(255, 255, 255, 0.1);
             }}
@@ -258,7 +260,20 @@ def get_login_html(message: str = "Please sign in with your Replit account") -> 
                 line-height: 1.6;
             }}
             .auth-button {{
-                margin: 0 auto;
+                margin: 20px auto;
+                min-height: 50px;
+            }}
+            .instructions {{
+                margin-top: 24px;
+                padding: 16px;
+                background: rgba(0, 209, 178, 0.1);
+                border-radius: 8px;
+                border: 1px solid rgba(0, 209, 178, 0.2);
+            }}
+            .instructions p {{
+                color: #00D1B2;
+                font-size: 13px;
+                margin: 0;
             }}
         </style>
     </head>
@@ -271,7 +286,17 @@ def get_login_html(message: str = "Please sign in with your Replit account") -> 
             <div class="auth-button">
                 {get_replit_auth_script()}
             </div>
+            <div class="instructions">
+                <p><strong>Note:</strong> Click the login button above to sign in with your Replit account. If you're already signed in with Replit, the app will automatically log you in.</p>
+            </div>
         </div>
+        <script>
+            // Auto-reload when authenticated
+            window.addEventListener('load', function() {{
+                // The Replit Auth script will handle login and page reload
+                console.log('Login page loaded');
+            }});
+        </script>
     </body>
     </html>
     '''

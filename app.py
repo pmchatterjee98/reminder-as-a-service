@@ -447,11 +447,18 @@ with col_header3:
                     username = st.session_state.user_data.get('username') or st.session_state.user_data.get('name') or auth_context.user_name
                     st.session_state.logout_username = username
                 
-                # Clear session
+                # Clear ALL session state
                 st.session_state.logged_out = True
                 st.session_state.user_id = None
                 st.session_state.user_data = None
                 st.session_state.show_onboarding = False
+                st.session_state.menu_view = 'main'
+                
+                # Clear other session keys to ensure clean logout
+                for key in list(st.session_state.keys()):
+                    if key not in ['logged_out', 'logout_username']:
+                        del st.session_state[key]
+                
                 st.rerun()
         
         # Profile view - now fully editable
