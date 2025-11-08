@@ -38,18 +38,68 @@ if 'logout_username' not in st.session_state:
 if st.session_state.logged_out:
     # Show login screen
     st.set_page_config(
-        page_title="RAAS — Sign In",
+        page_title="RAAS — Logged Out",
         page_icon="⚡",
         layout="centered"
     )
     
-    # Show login screen with username if available
-    if st.session_state.logout_username:
-        login_message = f"You've been logged out. Sign in as <strong>{st.session_state.logout_username}</strong> to continue using RAAS"
-    else:
-        login_message = "Sign in with your Replit account to access RAAS"
+    # Show logout confirmation
+    st.markdown("""
+    <div style="text-align: center; margin-top: 3rem;">
+        <h1 style="font-size: 48px; margin-bottom: 16px;">⚡</h1>
+        <h1 style="color: #6C5CE7; margin: 0 0 8px 0; font-size: 32px;">RAAS</h1>
+        <p style="color: #00D1B2; font-size: 14px; margin-bottom: 32px;">Reminder as a Service</p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    st.components.v1.html(get_login_html(login_message), height=600, scrolling=False)
+    if st.session_state.logout_username:
+        st.success(f"✅ You've been logged out successfully, **{st.session_state.logout_username}**")
+    else:
+        st.success("✅ You've been logged out successfully")
+    
+    st.markdown("""
+    <div style="background: rgba(108, 92, 231, 0.1); border-left: 4px solid #6C5CE7; padding: 1rem; border-radius: 8px; margin: 1.5rem 0;">
+        <h4 style="color: #6C5CE7; margin-top: 0;">📌 About Replit Auth</h4>
+        <p style="color: rgba(248, 249, 250, 0.9); line-height: 1.6; margin-bottom: 0;">
+            RAAS uses <strong>Replit Authentication</strong> for secure access. If you're still signed in to your Replit account, 
+            clicking "Return to RAAS" below will automatically log you back in.
+        </p>
+        <p style="color: rgba(248, 249, 250, 0.7); line-height: 1.6; margin-bottom: 0; margin-top: 0.75rem;">
+            <strong>To switch accounts:</strong> Log out of Replit first (replit.com), then return here.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("🔐 Return to RAAS", type="primary", use_container_width=True):
+            # Clear the logged_out flag to trigger normal auth flow
+            st.session_state.logged_out = False
+            st.session_state.logout_username = None
+            st.rerun()
+    
+    with col2:
+        st.markdown("""
+        <a href="https://replit.com/logout" target="_blank" style="text-decoration: none;">
+            <button style="
+                width: 100%;
+                padding: 0.5rem 1rem;
+                background: rgba(255, 255, 255, 0.05);
+                color: #F8F9FA;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 8px;
+                font-size: 1rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            " onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'" 
+               onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'">
+                🚪 Log Out of Replit
+            </button>
+        </a>
+        """, unsafe_allow_html=True)
+    
     st.stop()
 
 # Check if user is authenticated via Replit

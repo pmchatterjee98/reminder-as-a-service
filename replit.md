@@ -50,7 +50,7 @@ Preferred communication style: Simple, everyday language.
 - **Contact Data Security:** Email/phone/WhatsApp encrypted with Fernet; email also hashed with SHA-256.
 - **Onboarding Flow:** First-time users complete profile setup (name, username, contact info) and consent preferences.
 - **User Profile System:** Each user has a unique username and display name, stored in encrypted database.
-- **Logout Flow:** Clicking logout displays the Replit Auth login screen with the username of the logged-out account shown (e.g., "Sign in as username to continue"). This helps users identify which account to sign in with. Since RAAS uses Replit Auth, signing in again will immediately restore your session if you're still authenticated with Replit.
+- **Logout Flow:** Clicking logout shows a confirmation screen with two options: (1) "Return to RAAS" which auto-logs you back in if still authenticated with Replit, or (2) "Log Out of Replit" to fully sign out. Clear explanation of Replit Auth behavior helps users understand auto-login and account switching.
 
 **Feature Specifications:**
 - **Automatic 24-Hour Reminders:** All tasks within 24 hours of their due date automatically trigger reminders.
@@ -65,7 +65,7 @@ Preferred communication style: Simple, everyday language.
 - **Smart Contact Management:** Contact information pulled from user profile - no duplicate entry needed when creating reminders.
 - **12-Hour Time Format:** Intuitive time input using Hour (1-12), Minute (00-59), and AM/PM selectors with exact minute precision.
 - **Horizontal Action Buttons:** Complete, Edit, and Delete buttons displayed below each task with proper spacing to prevent text wrapping.
-- **Editable Profile:** Users can update all personal information (name, username, email, phone, WhatsApp) and notification preferences directly from the Profile page. All changes are validated, encrypted, and persisted to the database with comprehensive error handling.
+- **Editable Profile & Settings:** Users can update all personal information (name, username, email, phone, WhatsApp) and notification preferences from both Profile and Settings pages. All changes are validated, encrypted, and persisted to the database with comprehensive error handling. Data persistence verified across page refreshes.
 - **Mobile Browser Alarms:** Real-time browser notifications for tasks due within 24 hours on mobile and desktop. Users enable via Settings → Mobile Alarms. Notifications appear 1 hour before task due time (or immediately if less than 1 hour remaining) with vibration alerts, priority indicators, and task details. Works while app is open in a browser tab. Automatically re-schedules on tab focus.
 
 **Mobile Support:**
