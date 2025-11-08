@@ -376,7 +376,7 @@ st.markdown(f"""
 with st.sidebar:
     st.markdown("""
     <div style="text-align: center; padding: 1rem 0;">
-        <h2 style="margin: 0;">✨ Add Reminder</h2>
+        <h2 style="margin: 0;">⏰ Reminder Panel</h2>
         <p style="color: rgba(248, 249, 250, 0.6); font-size: 0.9rem; margin-top: 0.5rem;">
             Never forget what matters
         </p>
@@ -387,7 +387,21 @@ with st.sidebar:
         title = st.text_input("Title *", placeholder="e.g., Finish project report")
         description = st.text_area("Description", placeholder="Add details about this task...")
         due_date = st.date_input("Due Date *", min_value=datetime.now().date())
-        due_time = st.time_input("Due Time *", value=datetime.now().time())
+        
+        # 12-hour time input with AM/PM
+        st.write("**Due Time** *")
+        time_col1, time_col2, time_col3 = st.columns([2, 2, 1])
+        
+        # Calculate current hour in 12-hour format (1-12)
+        current_hour_24 = datetime.now().hour
+        current_hour_12 = current_hour_24 % 12 or 12  # Convert 0 to 12, keep 1-12
+        
+        with time_col1:
+            hour_12 = st.selectbox("Hour", options=list(range(1, 13)), index=current_hour_12 - 1, key="add_hour", label_visibility="collapsed")
+        with time_col2:
+            minute = st.selectbox("Minute", options=[f"{m:02d}" for m in range(0, 60)], index=datetime.now().minute, key="add_minute", label_visibility="collapsed")
+        with time_col3:
+            am_pm = st.selectbox("AM/PM", options=["AM", "PM"], index=0 if datetime.now().hour < 12 else 1, key="add_ampm", label_visibility="collapsed")
         
         st.subheader("Reminder Settings")
         st.info("⚡ Auto-reminders sent for all tasks within 24 hours of due date!")
@@ -434,6 +448,15 @@ with st.sidebar:
         
         if submitted:
             if title and due_date:
+                # Convert 12-hour time to 24-hour format
+                hour_24 = hour_12
+                if am_pm == "PM" and hour_12 != 12:
+                    hour_24 = hour_12 + 12
+                elif am_pm == "AM" and hour_12 == 12:
+                    hour_24 = 0
+                
+                due_time = datetime.strptime(f"{hour_24}:{minute}", "%H:%M").time()
+                
                 # Combine date and time
                 due_datetime = datetime.combine(due_date, due_time)
                 
@@ -555,7 +578,23 @@ def display_todo(todo):
             edit_title = st.text_input("Title", value=todo['title'])
             edit_description = st.text_area("Description", value=todo['description'] or "")
             edit_due_date = st.date_input("Due Date", value=due_datetime.date())
-            edit_due_time = st.time_input("Due Time", value=due_datetime.time())
+            
+            # 12-hour time input with AM/PM for editing
+            st.write("**Due Time**")
+            edit_time_col1, edit_time_col2, edit_time_col3 = st.columns([2, 2, 1])
+            
+            # Convert current time to 12-hour format
+            current_hour_24 = due_datetime.hour
+            current_hour_12 = current_hour_24 % 12 or 12  # Convert 0 to 12, keep 1-12
+            current_am_pm = "AM" if current_hour_24 < 12 else "PM"
+            current_minute = due_datetime.minute
+            
+            with edit_time_col1:
+                edit_hour_12 = st.selectbox("Hour", options=list(range(1, 13)), index=current_hour_12 - 1, key=f"edit_hour_{todo['id']}", label_visibility="collapsed")
+            with edit_time_col2:
+                edit_minute = st.selectbox("Minute", options=[f"{m:02d}" for m in range(0, 60)], index=current_minute, key=f"edit_minute_{todo['id']}", label_visibility="collapsed")
+            with edit_time_col3:
+                edit_am_pm = st.selectbox("AM/PM", options=["AM", "PM"], index=0 if current_am_pm == "AM" else 1, key=f"edit_ampm_{todo['id']}", label_visibility="collapsed")
             
             st.caption("⚡ Auto-reminders sent when task is within 24 hours of due date")
             
@@ -605,6 +644,14 @@ def display_todo(todo):
             col1, col2 = st.columns(2)
             with col1:
                 if st.form_submit_button("💾 Save Changes", use_container_width=True):
+                    # Convert 12-hour time to 24-hour format
+                    edit_hour_24 = edit_hour_12
+                    if edit_am_pm == "PM" and edit_hour_12 != 12:
+                        edit_hour_24 = edit_hour_12 + 12
+                    elif edit_am_pm == "AM" and edit_hour_12 == 12:
+                        edit_hour_24 = 0
+                    
+                    edit_due_time = datetime.strptime(f"{edit_hour_24}:{edit_minute}", "%H:%M").time()
                     edit_due_datetime = datetime.combine(edit_due_date, edit_due_time)
                     
                     # Use contact info from user's profile
@@ -715,20 +762,20 @@ def display_todo(todo):
             st.caption(f"Due: {due.strftime('%b %d, %Y at %I:%M %p')}")
         
         # Action buttons row - displayed horizontally below task
-        btn_col1, btn_col2, btn_col3, btn_col4 = st.columns([1, 1, 1, 3])
+        btn_col1, btn_col2, btn_col3, btn_col4 = st.columns([1.2, 1, 1, 2.8])
         
         with btn_col1:
-            if st.button("✓ Done" if not todo['completed'] else "↶ Undo", key=f"complete_{todo['id']}", help="Toggle complete", use_container_width=True):
+            if st.button("✓ Complete" if not todo['completed'] else "↶ Undo", key=f"complete_{todo['id']}", use_container_width=True):
                 database_multi_user.toggle_complete_for_user(todo['id'], current_user_id)
                 st.rerun()
         
         with btn_col2:
-            if st.button("✏️ Edit", key=f"edit_{todo['id']}", help="Edit reminder", use_container_width=True):
+            if st.button("✏️ Edit", key=f"edit_{todo['id']}", use_container_width=True):
                 st.session_state.editing_todo = todo['id']
                 st.rerun()
         
         with btn_col3:
-            if st.button("🗑️ Delete", key=f"delete_{todo['id']}", help="Delete reminder", use_container_width=True):
+            if st.button("🗑️ Delete", key=f"delete_{todo['id']}", use_container_width=True):
                 database_multi_user.delete_todo_for_user(todo['id'], current_user_id)
                 st.rerun()
         
