@@ -400,7 +400,97 @@ def export_to_pdf(todos):
     return bytes(pdf.output())
 
 def display_todo(todo):
-    """Display a single todo item with actions."""
+    """Display a single todo item with actions or edit form."""
+    # Check if this todo is being edited
+    if 'editing_todo' in st.session_state and st.session_state.editing_todo == todo['id']:
+        # Display inline edit form
+        st.markdown(f"""
+        <div style="background: rgba(108, 92, 231, 0.1); border: 2px solid rgba(108, 92, 231, 0.3); border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+            <h4 style="color: #00D1B2; margin: 0 0 1rem 0;">✏️ Editing: {todo['title']}</h4>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Handle both formats: 'T' separator and space separator
+        due_date_str = todo['due_date'].replace(' ', 'T') if ' ' in todo['due_date'] else todo['due_date']
+        due_datetime = datetime.fromisoformat(due_date_str)
+        
+        # Use unique key for form to ensure proper re-rendering with values
+        with st.form(f"edit_todo_form_{todo['id']}"):
+            edit_title = st.text_input("Title", value=todo['title'])
+            edit_description = st.text_area("Description", value=todo['description'] or "")
+            edit_due_date = st.date_input("Due Date", value=due_datetime.date())
+            edit_due_time = st.time_input("Due Time", value=due_datetime.time())
+            
+            current_reminder_hours = todo.get('reminder_hours', 24)
+            reminder_options = [1, 2, 6, 12, 24, 48, 72, 168]
+            default_index = reminder_options.index(current_reminder_hours) if current_reminder_hours in reminder_options else 4
+            
+            edit_reminder_hours = st.selectbox(
+                "Send reminder before due date",
+                options=reminder_options,
+                index=default_index,
+                format_func=lambda x: f"{x} hour{'s' if x != 1 else ''}" if x < 24 else f"{x//24} day{'s' if x//24 != 1 else ''}"
+            )
+            edit_email = st.text_input("Email", value=todo['email'] or "")
+            edit_phone = st.text_input("Phone (SMS)", value=todo['phone'] or "")
+            edit_whatsapp_phone = st.text_input("WhatsApp", value=todo.get('whatsapp_phone') or "")
+            
+            col_cat, col_pri = st.columns(2)
+            with col_cat:
+                edit_category = st.text_input("Category", value=todo.get('category') or "")
+            with col_pri:
+                current_priority = todo.get('priority', 'Medium')
+                edit_priority = st.selectbox("Priority", ["High", "Medium", "Low"], 
+                                            index=["High", "Medium", "Low"].index(current_priority) if current_priority in ["High", "Medium", "Low"] else 1)
+            
+            edit_is_recurring = st.checkbox("Make this a recurring task", value=bool(todo.get('is_recurring')))
+            
+            # Set defaults for recurrence settings
+            default_frequency = todo.get('recurrence_frequency') or 'days'
+            default_interval = todo.get('recurrence_interval') or 1
+            
+            edit_recurrence_frequency = default_frequency
+            edit_recurrence_interval = default_interval
+            
+            if edit_is_recurring:
+                col_freq, col_int = st.columns(2)
+                with col_freq:
+                    edit_recurrence_frequency = st.selectbox("Repeat every", ["days", "weeks", "months", "years"],
+                                                            index=["days", "weeks", "months", "years"].index(default_frequency) if default_frequency in ["days", "weeks", "months", "years"] else 0)
+                with col_int:
+                    edit_recurrence_interval = st.number_input("Interval", min_value=1, value=int(default_interval), step=1)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.form_submit_button("💾 Save Changes", use_container_width=True):
+                    edit_due_datetime = datetime.combine(edit_due_date, edit_due_time)
+                    database.update_todo(
+                        todo_id=todo['id'],
+                        title=edit_title or "",
+                        description=edit_description or "",
+                        due_date=edit_due_datetime.isoformat(),
+                        email=edit_email or "",
+                        phone=edit_phone or "",
+                        whatsapp_phone=edit_whatsapp_phone or "",
+                        reminder_hours=edit_reminder_hours,
+                        is_recurring=edit_is_recurring,
+                        recurrence_frequency=edit_recurrence_frequency if edit_is_recurring else None,
+                        recurrence_interval=edit_recurrence_interval if edit_is_recurring else None,
+                        category=edit_category if edit_category else None,
+                        priority=edit_priority
+                    )
+                    del st.session_state.editing_todo
+                    st.success("Reminder updated!")
+                    st.rerun()
+            
+            with col2:
+                if st.form_submit_button("❌ Cancel", use_container_width=True):
+                    del st.session_state.editing_todo
+                    st.rerun()
+        
+        st.divider()
+        return
+    
     # Handle both formats: 'T' separator and space separator
     due_date_str = todo['due_date'].replace(' ', 'T') if ' ' in todo['due_date'] else todo['due_date']
     due = datetime.fromisoformat(due_date_str)
@@ -678,99 +768,6 @@ else:
         """, unsafe_allow_html=True)
         for todo in completed:
             display_todo(todo)
-
-# Edit todo modal
-if 'editing_todo' in st.session_state and st.session_state.editing_todo:
-    todo_id = st.session_state.editing_todo
-    todo = database.get_todo_by_id(todo_id)
-    
-    if todo:
-        st.markdown("""
-        <div style="margin-bottom: 1.5rem;">
-            <h2 style="margin: 0;">✏️ Edit Reminder</h2>
-            <p style="color: rgba(248, 249, 250, 0.6); font-size: 0.95rem; margin-top: 0.5rem;">
-                Update your reminder details
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Handle both formats: 'T' separator and space separator
-        due_date_str = todo['due_date'].replace(' ', 'T') if ' ' in todo['due_date'] else todo['due_date']
-        due_datetime = datetime.fromisoformat(due_date_str)
-        
-        # Use unique key for form to ensure proper re-rendering with values
-        with st.form(f"edit_todo_form_{todo_id}"):
-            edit_title = st.text_input("Title", value=todo['title'])
-            edit_description = st.text_area("Description", value=todo['description'] or "")
-            edit_due_date = st.date_input("Due Date", value=due_datetime.date())
-            edit_due_time = st.time_input("Due Time", value=due_datetime.time())
-            
-            current_reminder_hours = todo.get('reminder_hours', 24)
-            reminder_options = [1, 2, 6, 12, 24, 48, 72, 168]
-            default_index = reminder_options.index(current_reminder_hours) if current_reminder_hours in reminder_options else 4
-            
-            edit_reminder_hours = st.selectbox(
-                "Send reminder before due date",
-                options=reminder_options,
-                index=default_index,
-                format_func=lambda x: f"{x} hour{'s' if x != 1 else ''}" if x < 24 else f"{x//24} day{'s' if x//24 != 1 else ''}"
-            )
-            edit_email = st.text_input("Email", value=todo['email'] or "")
-            edit_phone = st.text_input("Phone (SMS)", value=todo['phone'] or "")
-            edit_whatsapp_phone = st.text_input("WhatsApp", value=todo.get('whatsapp_phone') or "")
-            
-            col_cat, col_pri = st.columns(2)
-            with col_cat:
-                edit_category = st.text_input("Category", value=todo.get('category') or "")
-            with col_pri:
-                current_priority = todo.get('priority', 'Medium')
-                edit_priority = st.selectbox("Priority", ["High", "Medium", "Low"], 
-                                            index=["High", "Medium", "Low"].index(current_priority) if current_priority in ["High", "Medium", "Low"] else 1)
-            
-            edit_is_recurring = st.checkbox("Make this a recurring task", value=bool(todo.get('is_recurring')))
-            
-            # Set defaults for recurrence settings
-            default_frequency = todo.get('recurrence_frequency') or 'days'
-            default_interval = todo.get('recurrence_interval') or 1
-            
-            edit_recurrence_frequency = default_frequency
-            edit_recurrence_interval = default_interval
-            
-            if edit_is_recurring:
-                col_freq, col_int = st.columns(2)
-                with col_freq:
-                    edit_recurrence_frequency = st.selectbox("Repeat every", ["days", "weeks", "months", "years"],
-                                                            index=["days", "weeks", "months", "years"].index(default_frequency) if default_frequency in ["days", "weeks", "months", "years"] else 0)
-                with col_int:
-                    edit_recurrence_interval = st.number_input("Interval", min_value=1, value=int(default_interval), step=1)
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.form_submit_button("Save Changes", use_container_width=True):
-                    edit_due_datetime = datetime.combine(edit_due_date, edit_due_time)
-                    database.update_todo(
-                        todo_id=todo_id,
-                        title=edit_title or "",
-                        description=edit_description or "",
-                        due_date=edit_due_datetime.isoformat(),
-                        email=edit_email or "",
-                        phone=edit_phone or "",
-                        whatsapp_phone=edit_whatsapp_phone or "",
-                        reminder_hours=edit_reminder_hours,
-                        is_recurring=edit_is_recurring,
-                        recurrence_frequency=edit_recurrence_frequency if edit_is_recurring else None,
-                        recurrence_interval=edit_recurrence_interval if edit_is_recurring else None,
-                        category=edit_category if edit_category else None,
-                        priority=edit_priority
-                    )
-                    del st.session_state.editing_todo
-                    st.success("Todo updated!")
-                    st.rerun()
-            
-            with col2:
-                if st.form_submit_button("Cancel", use_container_width=True):
-                    del st.session_state.editing_todo
-                    st.rerun()
 
 # Configuration section
 st.markdown("<br>", unsafe_allow_html=True)
