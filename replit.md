@@ -27,7 +27,7 @@ Preferred communication style: Simple, everyday language.
 - **Design Philosophy:** Modern, calm, professional aesthetic with a dark theme.
 - **Color Palette:** Primary (`#6C5CE7`), Accent (`#00D1B2`), Surface (gradient `#0b0b0f` to `#1a1520`), Priority Colors (High: `#ff6b6b`, Medium: `#ffd93d`, Low: `#6bcf7f`), Text (`#F8F9FA`).
 - **Visual Elements:** Priority badges, custom-styled section headers, gradient buttons, subtle cards.
-- **Navigation:** Three-dots menu (⋮) in top right corner provides access to Profile, Settings, and Logout via a consolidated menu interface.
+- **Navigation:** Account menu in top right corner provides access to Profile, Settings, and Logout via a consolidated menu interface.
 
 **Frontend Architecture:**
 - Built with **Streamlit** and custom CSS for an accessible, Python-native web interface.
@@ -64,7 +64,7 @@ Preferred communication style: Simple, everyday language.
 - **Smart Contact Management:** Contact information pulled from user profile - no duplicate entry needed when creating reminders.
 - **12-Hour Time Format:** Intuitive time input using Hour (1-12), Minute (00-59), and AM/PM selectors with exact minute precision.
 - **Horizontal Action Buttons:** Complete, Edit, and Delete buttons displayed below each task with proper spacing to prevent text wrapping.
-- **Notification Settings:** Dedicated settings panel in top right corner allows users to enable/disable email, SMS, and WhatsApp notifications independently with real-time persistence.
+- **Editable Profile Settings:** Users can update their name, username, email, phone, and WhatsApp information directly from the settings panel. All changes are validated, encrypted, and persisted to the database with comprehensive error handling.
 
 **Mobile Support:**
 - Optimized for iPhone and iPad with a touch-friendly interface.
