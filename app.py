@@ -388,12 +388,23 @@ with st.sidebar:
         st.subheader("Reminder Settings")
         st.info("⚡ Auto-reminders sent for all tasks within 24 hours of due date!")
         
-        email = st.text_input("Email", placeholder="your@email.com")
-        phone = st.text_input("Phone (SMS)", placeholder="+1234567890")
-        whatsapp_phone = st.text_input("WhatsApp", placeholder="+1234567890")
+        # Show user's registered contact methods (read-only info)
+        user = st.session_state.user_data
+        contact_methods = []
+        if user:
+            if user.get('consent_email') and user.get('email_decrypted'):
+                contact_methods.append(f"📧 {user['email_decrypted']}")
+            if user.get('consent_sms') and user.get('phone_decrypted'):
+                contact_methods.append(f"📱 SMS: {user['phone_decrypted']}")
+            if user.get('consent_whatsapp') and user.get('whatsapp_decrypted'):
+                contact_methods.append(f"💬 WhatsApp: {user['whatsapp_decrypted']}")
         
-        st.caption("📧 Email reminders require SMTP configuration")
-        st.caption("📱 SMS & WhatsApp require Twilio credentials")
+        if contact_methods:
+            st.caption("Reminders will be sent to:")
+            for method in contact_methods:
+                st.caption(f"  {method}")
+        else:
+            st.caption("⚠️ No notification methods enabled. Update your profile to receive reminders.")
         
         st.subheader("Organization")
         col_cat, col_pri = st.columns(2)
@@ -421,14 +432,21 @@ with st.sidebar:
             if title and due_date:
                 # Combine date and time
                 due_datetime = datetime.combine(due_date, due_time)
+                
+                # Use contact info from user's profile
+                user = st.session_state.user_data
+                email = user.get('email_decrypted') if (user and user.get('consent_email')) else None
+                phone = user.get('phone_decrypted') if (user and user.get('consent_sms')) else None
+                whatsapp_phone = user.get('whatsapp_decrypted') if (user and user.get('consent_whatsapp')) else None
+                
                 database_multi_user.add_todo_for_user(
                     user_id=current_user_id,
                     title=title,
                     description=description,
                     due_date=due_datetime.isoformat(),
-                    email=email,
-                    phone=phone,
-                    whatsapp_phone=whatsapp_phone,
+                    email=email or "",
+                    phone=phone or "",
+                    whatsapp_phone=whatsapp_phone or "",
                     reminder_hours=24,  # Auto-reminder set to 24 hours
                     is_recurring=is_recurring,
                     recurrence_frequency=recurrence_frequency,
@@ -537,9 +555,23 @@ def display_todo(todo):
             
             st.caption("⚡ Auto-reminders sent when task is within 24 hours of due date")
             
-            edit_email = st.text_input("Email", value=todo['email'] or "")
-            edit_phone = st.text_input("Phone (SMS)", value=todo['phone'] or "")
-            edit_whatsapp_phone = st.text_input("WhatsApp", value=todo.get('whatsapp_phone') or "")
+            # Show user's registered contact methods (read-only info)
+            user = st.session_state.user_data
+            contact_methods = []
+            if user:
+                if user.get('consent_email') and user.get('email_decrypted'):
+                    contact_methods.append(f"📧 {user['email_decrypted']}")
+                if user.get('consent_sms') and user.get('phone_decrypted'):
+                    contact_methods.append(f"📱 SMS: {user['phone_decrypted']}")
+                if user.get('consent_whatsapp') and user.get('whatsapp_decrypted'):
+                    contact_methods.append(f"💬 WhatsApp: {user['whatsapp_decrypted']}")
+            
+            if contact_methods:
+                st.caption("Reminders will be sent to:")
+                for method in contact_methods:
+                    st.caption(f"  {method}")
+            else:
+                st.caption("⚠️ No notification methods enabled. Update your profile to receive reminders.")
             
             col_cat, col_pri = st.columns(2)
             with col_cat:
@@ -570,6 +602,13 @@ def display_todo(todo):
             with col1:
                 if st.form_submit_button("💾 Save Changes", use_container_width=True):
                     edit_due_datetime = datetime.combine(edit_due_date, edit_due_time)
+                    
+                    # Use contact info from user's profile
+                    user = st.session_state.user_data
+                    edit_email = user.get('email_decrypted') if (user and user.get('consent_email')) else None
+                    edit_phone = user.get('phone_decrypted') if (user and user.get('consent_sms')) else None
+                    edit_whatsapp_phone = user.get('whatsapp_decrypted') if (user and user.get('consent_whatsapp')) else None
+                    
                     database_multi_user.update_todo_for_user(
                         user_id=current_user_id,
                         todo_id=todo['id'],

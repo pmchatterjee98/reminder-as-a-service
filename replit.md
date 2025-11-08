@@ -27,58 +27,52 @@ Preferred communication style: Simple, everyday language.
 - **Design Philosophy:** Modern, calm, professional aesthetic with a dark theme.
 - **Color Palette:** Primary (`#6C5CE7`), Accent (`#00D1B2`), Surface (gradient `#0b0b0f` to `#1a1520`), Priority Colors (High: `#ff6b6b`, Medium: `#ffd93d`, Low: `#6bcf7f`), Text (`#F8F9FA`).
 - **Visual Elements:** Priority badges, custom-styled section headers, gradient buttons, subtle cards.
-- **Typography:** Default Streamlit fonts with custom sizing and color hierarchy.
 
 **Frontend Architecture:**
 - Built with **Streamlit** and custom CSS for an accessible, Python-native web interface.
-- Uses a sidebar for forms and a main area for task lists, with a "wide" layout.
 
 **REST API Architecture:**
 - Implemented with **FastAPI** for programmatic access, providing high performance and automatic OpenAPI/Swagger documentation.
 - **Endpoints:** CRUD operations for todos, statistics, and toggling completion status.
-- **Authentication:** Layered security model:
-  1. **Mandatory API Key** (RAAS_API_KEY): Required by default, prevents unauthorized access
-  2. **Replit Auth Headers**: X-Replit-User-Id + X-Replit-User-Name (trustworthy within Replit infrastructure)
-  3. **Database Verification**: Ensures user exists and completed onboarding
-- **Security Model**: Designed for internal/Replit deployment where headers are authenticated by Replit's reverse proxy. For external deployments, implement signed-token authentication (HMAC/JWT) in addition to API key.
+- **Authentication:** Layered security model including a mandatory API Key, Replit Auth Headers, and database verification for user existence and onboarding. Designed for internal/Replit deployment.
 
 **Backend Architecture:**
-- Monolithic Python application structure with modular components for database, notifications, and scheduling.
+- Monolithic Python application structure with modular components.
 - **Data Persistence:** Uses **SQLite** with multi-user schema supporting automatic migrations.
 - **Background Job Processing:** **APScheduler** handles periodic checks for upcoming tasks and reminder dispatch.
-- **Notification System:** Supports multi-channel delivery via **SMTP (Email)**, **Twilio (SMS)**, and **Twilio (WhatsApp)**, with environment variable-based configuration for credentials.
+- **Notification System:** Supports multi-channel delivery via **SMTP (Email)**, **Twilio (SMS)**, and **Twilio (WhatsApp)**.
 
 **Multi-User Architecture:**
-- **Dual-ID System:** Each user has two identifiers:
-  1. `users.id` - Internal RAAS UUID (PRIMARY KEY) → Used for all database queries
-  2. `users.auth_provider_id` - External Replit ID → Used only for authentication lookup
-- **Authentication Flow:**
-  1. User logs in via Replit Auth → Headers contain `X-Replit-User-Id` (external Replit ID)
-  2. System looks up user: `get_user_by_auth_id(replit_id)` → Returns full user record
-  3. System extracts internal ID: `user['id']` → Used for all database operations
-  4. Todos stored with: `todos.user_id = user['id']` (internal UUID)
-- **User Isolation:** All CRUD operations strictly filter by internal user ID
-- **Contact Data Security:** Email/phone/WhatsApp encrypted with Fernet, email also hashed with SHA-256
-- **Session Persistence:** Users stay logged in across devices via encrypted session tokens
-- **Onboarding Flow:** First-time users complete contact info and consent preferences
-- **Legacy Migration:** `migrate_legacy_todos.py` utility for assigning NULL user_id todos to specific users
+- **Dual-ID System:** Each user has an internal RAAS UUID and an external Replit ID for authentication lookup.
+- **Authentication Flow:** Integrates with Replit Auth, looking up users by `X-Replit-User-Id` to retrieve the internal UUID for all database operations.
+- **User Isolation:** All CRUD operations strictly filter by internal user ID.
+- **Contact Data Security:** Email/phone/WhatsApp encrypted with Fernet; email also hashed with SHA-256.
+- **Onboarding Flow:** First-time users complete contact info and consent preferences.
 
 **Feature Specifications:**
-- **Automatic 24-Hour Reminders:** All tasks within 24 hours of their due date automatically trigger reminders via email, SMS, and/or WhatsApp (no manual configuration needed).
-- **Auto-Cleanup on Refresh:** Completed tasks are automatically deleted when the app refreshes, keeping the interface clean and focused on active reminders.
+- **Automatic 24-Hour Reminders:** All tasks within 24 hours of their due date automatically trigger reminders.
+- **Auto-Cleanup on Refresh:** Completed tasks are automatically deleted when the app refreshes.
 - **Recurring Task Management:** Automatic rescheduling based on daily, weekly, monthly, or yearly frequencies.
-- **Categorization and Prioritization:** Tasks can be assigned categories and priority levels (High, Medium, Low).
+- **Categorization and Prioritization:** Tasks can be assigned categories and priority levels.
 - **Advanced Filtering:** Users can filter tasks by category, priority, and completion status.
-- **Data Export:** Functionality to export todo lists to CSV and PDF formats with timestamped filenames.
-- **Inline Editing:** Edit forms appear directly at the task location for intuitive updates.
-- **Horizontal Action Buttons:** Complete, Edit, and Delete buttons displayed below each task for easy access.
+- **Data Export:** Functionality to export todo lists to CSV and PDF formats.
+- **Inline Editing:** Edit forms appear directly at the task location.
+- **Horizontal Action Buttons:** Complete, Edit, and Delete buttons displayed below each task.
+
+**Mobile Support:**
+- Optimized for iPhone and iPad with a touch-friendly interface.
+- Installable as a Progressive Web App (PWA) with a manifest.json and Apple-specific meta tags.
+- Responsive CSS with media queries for all screen sizes.
+
+**Deployment:**
+- Supports Replit Publishing (recommended), Docker Containerization, and CI/CD with GitHub Actions.
 
 ## External Dependencies
 
 **Third-party Services:**
-- **Email Delivery:** Gmail SMTP server for sending email reminders.
-- **SMS Delivery:** Twilio API for sending SMS reminders.
-- **WhatsApp Delivery:** Twilio WhatsApp API for sending WhatsApp reminders.
+- **Email Delivery:** Gmail SMTP server.
+- **SMS Delivery:** Twilio API.
+- **WhatsApp Delivery:** Twilio WhatsApp API.
 
 **Python Packages:**
 - **Core Framework:** `streamlit`
@@ -86,158 +80,4 @@ Preferred communication style: Simple, everyday language.
 - **Scheduling:** `apscheduler`
 - **Email & SMS:** `smtplib`, `email.mime`, `twilio`
 - **Export:** `csv`, `fpdf2`
-- **Utilities:** `datetime`, `os`, `typing`, `io`
-
-## Mobile Support
-
-**Progressive Web App (PWA):**
-- Optimized for iPhone and iPad with touch-friendly interface
-- Installable on iOS home screen for native app experience
-- Responsive CSS with media queries for all screen sizes
-- Touch-optimized buttons (44px minimum following iOS HIG)
-- Form inputs sized to prevent auto-zoom on mobile
-- PWA manifest.json for installability
-- Apple-specific meta tags for home screen integration
-- Works offline for viewing existing reminders
-
-## Deployment
-
-RAAS supports multiple deployment options:
-
-**Option 1: Replit Publishing (Recommended)**
-- Built-in Autoscale deployment with automatic scaling
-- Custom domain support with automatic SSL/TLS
-- One-click deployment from Replit workspace
-- Cost-effective starting at $7/month
-
-**Option 2: Docker Containerization**
-- Multi-container setup with Docker Compose
-- Separate containers for Streamlit app and FastAPI backend
-- Deployable to any cloud provider (AWS, Azure, DigitalOcean, etc.)
-- Production-ready with health checks and non-root users
-
-**Option 3: CI/CD with GitHub Actions**
-- Automated testing pipeline (linting, Docker builds)
-- Continuous deployment to cloud servers
-- Docker image publishing to Docker Hub
-- SSH-based deployment to production servers
-
-See `DEPLOYMENT.md` for detailed instructions on all deployment options.
-
-## Testing
-
-**Comprehensive Unit Testing:**
-- **74 unit tests** covering all major functionality across 4 test suites
-- **Test Coverage**: Database (33 tests), Notifications (14 tests), API (23 tests), Scheduler (4 tests)
-- **Mocking Strategy**: All external services (SMTP, Twilio) properly mocked for reliable, fast tests
-- **Test Isolation**: Each test suite uses isolated temporary databases
-- **CI/CD Integration**: GitHub Actions workflow for automated testing on push/pull requests
-- **Documentation**: Comprehensive TESTING.md guide with coverage report and best practices
-
-**Test Files:**
-- `test_database.py` - CRUD operations, recurring tasks, filtering, reminders
-- `test_notifications.py` - Email (SMTP), SMS (Twilio), WhatsApp (Twilio)
-- `test_api.py` - REST API endpoints including Siri integration with API key security
-- `test_scheduler.py` - Background job processing and reminder dispatch
-
-**Running Tests:**
-```bash
-pytest                    # Run all tests
-pytest -v                # Verbose output
-pytest --cov=.           # With coverage report
-```
-
-**Testing Limitations:**
-- **Playwright Multi-User Tests:** Cannot fully test per-user isolation because Replit Auth headers are injected at the proxy level, causing all browser contexts to share the same `X-Replit-User-Id`. In production, different Replit users have different IDs, ensuring proper isolation.
-- **Workaround:** Unit tests cover multi-user authorization logic; Playwright tests validate single-user workflows.
-
-## Recent Changes
-
-**Multi-User Authentication with Replit Auth** (November 2025)
-- **Complete Replit Auth integration** for professional multi-user system
-- **Dual-ID Architecture:** Internal RAAS UUID (`users.id`) for all database operations + external Replit ID (`auth_provider_id`) for authentication lookup
-- **User onboarding flow** captures email, phone, WhatsApp, and consent preferences at first login
-- **Persistent session management** across devices eliminates repeated logins
-- **Strict per-user authorization:** users can ONLY access their own reminders
-- **Security-first architecture** with field-level encryption for all contact data
-- **Created 5 new modules:**
-  - `security.py` - Fernet encryption + SHA-256 hashing utilities
-  - `database_auth.py` - Multi-user database with encrypted contact storage
-  - `auth_replit.py` - Replit Auth integration helpers
-  - `database_multi_user.py` - Per-user CRUD operations with strict ownership enforcement
-  - `migrate_legacy_todos.py` - Interactive CLI utility for legacy data migration
-- **Updated 3 core modules:**
-  - `app.py` - Full Replit Auth integration in Streamlit frontend
-  - `api.py` - Layered security (API key + Replit headers + database verification)
-  - `scheduler.py` - Optimized per-user SQL queries (eliminated O(N²) scans)
-- **141 total tests** (67 authentication + 74 existing RAAS) - all passing
-- **GDPR-compliant consent management** with explicit opt-in for notifications
-- **Contact data encryption:** Email stored as SHA-256 hash + Fernet encrypted, never plaintext
-- **Critical security fixes:**
-  - Removed NULL user_id bypass that allowed cross-user data access
-  - Fixed user ID consistency bug in scheduler and FastAPI (now use internal UUID)
-  - Fixed migration utility to use internal RAAS UUID (not auth_provider_id)
-  - **Added UNIQUE constraint to auth_provider_id** (prevents duplicate Replit user accounts)
-  - **Application-level guard** prevents duplicates even before migration runs
-  - **Automatic migration** retrofits UNIQUE constraint on legacy databases
-  - **Multi-layer data integrity protection** (guard + migration + schema constraint)
-- **Architect-approved:** Zero authorization gaps, production-ready multi-user isolation
-- **Deployment requirements:**
-  - `ENCRYPTION_KEY` must be added to Replit Secrets before production use
-  - `RAAS_API_KEY` recommended for API security (mandatory by default)
-  - Run migration utility if legacy NULL user_id todos exist
-
-**UX Improvements & Auto-Reminders** (November 2025)
-- Automatic 24-hour reminder system: all tasks within 24 hours of due date get reminders automatically
-- Auto-cleanup: completed tasks are deleted on app refresh to keep interface clean
-- Horizontal button layout: Complete, Edit, Delete buttons now displayed below each task
-- Improved button labels: "✓ Done" / "↶ Undo" instead of cryptic symbols
-- Added 8 new unit tests for automatic reminders and completed task deletion (74 total tests)
-- Updated UI to remove manual reminder interval selector (automatic 24hr system)
-
-**Comprehensive Unit Testing** (November 2025)
-- Created 66 unit tests covering database, notifications, API, and scheduler functionality
-- Implemented mocking strategy for all external services (SMTP, Twilio API)
-- Added GitHub Actions CI workflow for automated testing on every push
-- Created TESTING.md documentation with coverage metrics and testing guide
-- All tests passing successfully with proper isolation and fixtures
-
-**Mobile Optimization & PWA** (November 2025)
-- Mobile-responsive CSS with media queries for optimal viewing on iPhone/iPad
-- Touch optimization with 44px minimum button sizes (iOS HIG standards)
-- PWA manifest.json for Progressive Web App installability
-- iOS-specific meta tags for home screen installation
-- No-zoom form inputs (16px+ font size prevents iOS auto-zoom)
-- Generated custom lightning bolt app icon
-- Comprehensive mobile guide documentation (MOBILE_GUIDE.md)
-- Updated Streamlit config with RAAS theme colors
-
-**Docker & CI/CD Setup** (November 2025)
-- Dockerfiles for Streamlit app and FastAPI API
-- Docker Compose multi-container orchestration with health checks
-- GitHub Actions CI pipeline for automated testing and Docker builds
-- GitHub Actions CD pipeline for Docker Hub publishing and SSH deployment
-- Comprehensive deployment guide for all options
-- Production-ready containers with non-root users and security best practices
-
-**WhatsApp Integration** (November 2025)
-- Full Twilio WhatsApp API integration for sending reminders
-- Database migration added `whatsapp_phone` column to todos table
-- UI updates with WhatsApp phone input fields in add/edit forms
-- API updates supporting WhatsApp phone numbers in all endpoints
-- Scheduler enhanced to send WhatsApp reminders alongside email and SMS
-- Multi-channel support: users can choose any combination of notifications
-
-**REST API Addition** (November 2025)
-- Comprehensive FastAPI-based REST API with Swagger documentation
-- Full CRUD operations for todos (GET, POST, PUT, DELETE)
-- Statistics endpoint for dashboard metrics
-- Toggle completion endpoint for quick status updates
-- Automatic OpenAPI/Swagger UI at /docs endpoint
-
-**Notification System Activation** (November 2025)
-- Email notifications fully configured with Gmail SMTP
-- SMS notifications fully configured with Twilio API
-- Professional RAAS branding in all notification messages
-- All credentials stored securely as Replit Secrets
-- Test script (test_notifications.py) for manual verification
+- **Encryption:** `cryptography` (for Fernet)
