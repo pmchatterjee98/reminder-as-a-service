@@ -414,12 +414,78 @@ with col_header2:
     """, unsafe_allow_html=True)
 
 with col_header3:
-    # Settings and Profile buttons in top right
-    settings_col, profile_col = st.columns(2)
-    
-    with settings_col:
-        # Settings popover
-        with st.popover("⚙️ Settings", use_container_width=True):
+    # Three-dots menu in top right
+    with st.popover("⋮", use_container_width=True):
+        # Initialize menu view state
+        if 'menu_view' not in st.session_state:
+            st.session_state.menu_view = 'main'
+        
+        # Main menu
+        if st.session_state.menu_view == 'main':
+            st.markdown("""
+            <div style="padding: 0.5rem 0;">
+                <h4 style="margin: 0 0 1rem 0; color: #00D1B2;">Menu</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Profile button
+            if st.button("👤 Profile", use_container_width=True):
+                st.session_state.menu_view = 'profile'
+                st.rerun()
+            
+            # Settings button
+            if st.button("⚙️ Settings", use_container_width=True):
+                st.session_state.menu_view = 'settings'
+                st.rerun()
+            
+            st.divider()
+            
+            # Logout button
+            if st.button("🚪 Logout", use_container_width=True, type="primary"):
+                st.session_state.logged_out = True
+                st.session_state.user_id = None
+                st.session_state.user_data = None
+                st.session_state.show_onboarding = False
+                st.rerun()
+        
+        # Profile view
+        elif st.session_state.menu_view == 'profile':
+            # Back button
+            if st.button("← Back", use_container_width=True):
+                st.session_state.menu_view = 'main'
+                st.rerun()
+            
+            st.markdown(f"""
+            <div style="padding: 0.5rem 0;">
+                <h4 style="margin: 0 0 1rem 0; color: #00D1B2;">Your Profile</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Display user information
+            st.write(f"**Name:** {current_user.get('name') or 'Not set'}")
+            st.write(f"**Username:** @{current_user.get('username') or 'Not set'}")
+            st.write(f"**Email:** {current_user.get('email_decrypted') or 'Not set'}")
+            
+            if current_user.get('phone_decrypted'):
+                st.write(f"**Phone:** {current_user['phone_decrypted']}")
+            if current_user.get('whatsapp_decrypted'):
+                st.write(f"**WhatsApp:** {current_user['whatsapp_decrypted']}")
+            
+            st.divider()
+            
+            # Notification preferences (read-only)
+            st.caption("**Notification Preferences:**")
+            st.caption(f"✉️ Email: {'Enabled' if current_user.get('consent_email') else 'Disabled'}")
+            st.caption(f"📱 SMS: {'Enabled' if current_user.get('consent_sms') else 'Disabled'}")
+            st.caption(f"💬 WhatsApp: {'Enabled' if current_user.get('consent_whatsapp') else 'Disabled'}")
+        
+        # Settings view
+        elif st.session_state.menu_view == 'settings':
+            # Back button
+            if st.button("← Back", use_container_width=True):
+                st.session_state.menu_view = 'main'
+                st.rerun()
+            
             st.markdown("""
             <div style="padding: 0.5rem 0;">
                 <h4 style="margin: 0 0 1rem 0; color: #00D1B2;">Notification Settings</h4>
@@ -471,48 +537,10 @@ with col_header3:
                     # Refresh user data to reflect changes
                     from database_auth import get_user_by_id
                     st.session_state.user_data = get_user_by_id(st.session_state.user_id)
+                    st.session_state.menu_view = 'main'
                     st.rerun()
                 else:
                     st.error("❌ Failed to save settings. Please try again.")
-    
-    with profile_col:
-        # Profile dropdown
-        with st.popover("👤 Profile", use_container_width=True):
-            st.markdown(f"""
-            <div style="padding: 0.5rem 0;">
-                <h4 style="margin: 0 0 1rem 0; color: #00D1B2;">Your Profile</h4>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Display user information
-            st.write(f"**Name:** {current_user.get('name') or 'Not set'}")
-            st.write(f"**Username:** @{current_user.get('username') or 'Not set'}")
-            st.write(f"**Email:** {current_user.get('email_decrypted') or 'Not set'}")
-            
-            if current_user.get('phone_decrypted'):
-                st.write(f"**Phone:** {current_user['phone_decrypted']}")
-            if current_user.get('whatsapp_decrypted'):
-                st.write(f"**WhatsApp:** {current_user['whatsapp_decrypted']}")
-            
-            st.divider()
-            
-            # Notification preferences (read-only)
-            st.caption("**Notification Preferences:**")
-            st.caption(f"✉️ Email: {'Enabled' if current_user.get('consent_email') else 'Disabled'}")
-            st.caption(f"📱 SMS: {'Enabled' if current_user.get('consent_sms') else 'Disabled'}")
-            st.caption(f"💬 WhatsApp: {'Enabled' if current_user.get('consent_whatsapp') else 'Disabled'}")
-            
-            st.divider()
-            
-            # Logout button
-            if st.button("🚪 Logout", use_container_width=True, type="primary"):
-                # Set logged_out flag to prevent auto re-authentication
-                st.session_state.logged_out = True
-                # Clear user-specific data
-                st.session_state.user_id = None
-                st.session_state.user_data = None
-                st.session_state.show_onboarding = False
-                st.rerun()
 
 # Sidebar for adding/editing todos
 with st.sidebar:
