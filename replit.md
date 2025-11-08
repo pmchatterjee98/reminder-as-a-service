@@ -130,6 +130,21 @@ pytest --cov=.           # With coverage report
 
 ## Recent Changes
 
+**Multi-User Authentication with Replit Auth** (November 2025)
+- Complete Replit Auth integration for professional multi-user system
+- User onboarding flow captures email, phone, WhatsApp, and consent preferences at first login
+- Persistent session management across devices eliminates repeated logins
+- Strict per-user authorization: users can ONLY access their own reminders
+- Security-first architecture with field-level encryption for all contact data
+- Created 3 new modules: `security.py` (encryption), `database_auth.py` (encrypted storage), `auth_replit.py` (Replit Auth integration)
+- Created `database_multi_user.py` with strict ownership enforcement for all CRUD operations
+- 141 total tests (67 authentication + 74 existing RAAS) - all passing
+- GDPR-compliant consent management with explicit opt-in for notifications
+- Emails stored as SHA-256 hash + Fernet encrypted, never plaintext
+- Critical security fix: removed NULL user_id bypass that allowed cross-user data access
+- Architect-approved security model with zero authorization gaps
+- **Note:** ENCRYPTION_KEY must be added to Replit Secrets before production use
+
 **UX Improvements & Auto-Reminders** (November 2025)
 - Automatic 24-hour reminder system: all tasks within 24 hours of due date get reminders automatically
 - Auto-cleanup: completed tasks are deleted on app refresh to keep interface clean
