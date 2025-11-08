@@ -59,10 +59,11 @@ Preferred communication style: Simple, everyday language.
 - **Advanced Filtering:** Users can filter tasks by category, priority, and completion status.
 - **Data Export:** Functionality to export todo lists to CSV and PDF formats.
 - **Inline Editing:** Edit forms appear directly at the task location.
-- **Personalized Experience:** Dashboard greets users by their Replit username for a professional, personalized feel.
+- **Personalized Experience:** Dashboard greets users by their stored name for a professional, personalized feel.
 - **Smart Contact Management:** Contact information pulled from user profile - no duplicate entry needed when creating reminders.
 - **12-Hour Time Format:** Intuitive time input using Hour (1-12), Minute (00-59), and AM/PM selectors with exact minute precision.
 - **Horizontal Action Buttons:** Complete, Edit, and Delete buttons displayed below each task with proper spacing to prevent text wrapping.
+- **Notification Settings:** Dedicated settings panel in top right corner allows users to enable/disable email, SMS, and WhatsApp notifications independently with real-time persistence.
 
 **Mobile Support:**
 - Optimized for iPhone and iPad with a touch-friendly interface.
