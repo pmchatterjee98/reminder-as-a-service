@@ -1115,20 +1115,28 @@ def display_todo(todo):
             st.caption(f"Due: {due.strftime('%b %d, %Y at %I:%M %p')}")
         
         # Action buttons row - displayed horizontally below task
-        btn_col1, btn_col2, btn_col3, btn_col4 = st.columns([1.2, 1, 1, 2.8])
-        
-        with btn_col1:
-            if st.button("✓ Complete" if not todo['completed'] else "↶ Undo", key=f"complete_{todo['id']}", use_container_width=True):
+        # Use container to ensure proper isolation of button events
+        with st.container():
+            btn_col1, btn_col2, btn_col3, btn_col4 = st.columns([1.2, 1, 1, 2.8])
+            
+            with btn_col1:
+                complete_clicked = st.button("✓ Complete" if not todo['completed'] else "↶ Undo", key=f"complete_{todo['id']}", use_container_width=True)
+            
+            with btn_col2:
+                edit_clicked = st.button("✏️ Edit", key=f"edit_{todo['id']}", use_container_width=True)
+            
+            with btn_col3:
+                delete_clicked = st.button("🗑️ Delete", key=f"delete_{todo['id']}", use_container_width=True)
+            
+            # Handle button clicks AFTER all buttons are rendered
+            if complete_clicked:
                 database_multi_user.toggle_complete_for_user(todo['id'], current_user_id)
                 st.rerun()
-        
-        with btn_col2:
-            if st.button("✏️ Edit", key=f"edit_{todo['id']}", use_container_width=True):
-                st.session_state.editing_todo = str(todo['id'])  # Ensure string type for consistency
+            elif edit_clicked:
+                # Store the ID we want to edit
+                st.session_state.editing_todo = str(todo['id'])
                 st.rerun()
-        
-        with btn_col3:
-            if st.button("🗑️ Delete", key=f"delete_{todo['id']}", use_container_width=True):
+            elif delete_clicked:
                 database_multi_user.delete_todo_for_user(todo['id'], current_user_id)
                 st.rerun()
         
@@ -1146,6 +1154,14 @@ st.markdown("""
 
 # Get all todos for current user
 todos = database_multi_user.get_todos_for_user(current_user_id)
+
+# DEBUG: Clear stale editing state if the task being edited no longer exists
+if 'editing_todo' in st.session_state:
+    editing_id = str(st.session_state.editing_todo)
+    task_ids = [str(t['id']) for t in todos]
+    if editing_id not in task_ids:
+        # Task being edited was deleted, clear the state
+        del st.session_state.editing_todo
 
 # Inject Mobile Notification System
 import json
