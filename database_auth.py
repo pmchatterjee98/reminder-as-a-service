@@ -548,6 +548,57 @@ def update_user_contact_info(user_id: str, email: Optional[str] = None,
         conn.close()
 
 
+def update_user_profile(user_id: str, name: Optional[str] = None, 
+                        username: Optional[str] = None) -> bool:
+    """
+    Update user's name and username.
+    
+    Args:
+        user_id: User's ID
+        name: New name (optional)
+        username: New username (optional)
+    
+    Returns:
+        True if successful, False otherwise
+    """
+    if not name and not username:
+        return False
+    
+    # Sanitize inputs
+    name = sanitize_input(name) if name else None
+    username = sanitize_input(username) if username else None
+    
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    
+    try:
+        updates = []
+        params = []
+        
+        if name:
+            updates.append("name = ?")
+            params.append(name)
+        if username:
+            updates.append("username = ?")
+            params.append(username)
+        
+        params.append(user_id)
+        
+        query = f"UPDATE users SET {', '.join(updates)} WHERE id = ?"
+        cursor.execute(query, params)
+        
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        # Username already exists
+        return False
+    except Exception as e:
+        print(f"Update failed: {e}")
+        return False
+    finally:
+        conn.close()
+
+
 def create_session(user_id: str, device_fingerprint: Optional[str] = None,
                    expires_in_days: int = 30) -> Optional[str]:
     """
