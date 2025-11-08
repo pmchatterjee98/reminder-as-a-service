@@ -163,18 +163,18 @@ def get_current_user(request: Request, api_authenticated: bool = Depends(verify_
 
 class TodoBase(BaseModel):
     """Base todo model with common fields"""
-    title: str = Field(..., min_length=1, max_length=200, description="Title of the todo", example="Team Meeting")
-    description: Optional[str] = Field(None, max_length=1000, description="Detailed description", example="Discuss Q1 goals and project timeline")
-    due_date: str = Field(..., description="Due date in ISO format (YYYY-MM-DD HH:MM:SS)", example="2025-11-15 14:30:00")
-    email: Optional[str] = Field(None, description="Email for notifications", example="user@example.com")
-    phone: Optional[str] = Field(None, description="Phone number for SMS notifications", example="+1234567890")
-    whatsapp_phone: Optional[str] = Field(None, description="WhatsApp phone number for notifications", example="+1234567890")
-    reminder_hours: int = Field(24, ge=1, le=168, description="Hours before due date to send reminder (1-168)", example=24)
-    category: Optional[str] = Field(None, max_length=50, description="Category for organization", example="Work")
-    priority: str = Field("Medium", description="Priority level: High, Medium, or Low", example="High")
+    title: str = Field(..., min_length=1, max_length=200, description="Title of the todo", example="Team Meeting")  # type: ignore
+    description: Optional[str] = Field(None, max_length=1000, description="Detailed description", example="Discuss Q1 goals and project timeline")  # type: ignore
+    due_date: str = Field(..., description="Due date in ISO format (YYYY-MM-DD HH:MM:SS)", example="2025-11-15 14:30:00")  # type: ignore
+    email: Optional[str] = Field(None, description="Email for notifications", example="user@example.com")  # type: ignore
+    phone: Optional[str] = Field(None, description="Phone number for SMS notifications", example="+1234567890")  # type: ignore
+    whatsapp_phone: Optional[str] = Field(None, description="WhatsApp phone number for notifications", example="+1234567890")  # type: ignore
+    reminder_hours: int = Field(24, ge=1, le=168, description="Hours before due date to send reminder (1-168)", example=24)  # type: ignore
+    category: Optional[str] = Field(None, max_length=50, description="Category for organization", example="Work")  # type: ignore
+    priority: str = Field("Medium", description="Priority level: High, Medium, or Low", example="High")  # type: ignore
     is_recurring: bool = Field(False, description="Whether this is a recurring task")
-    recurrence_frequency: Optional[str] = Field(None, description="Recurrence frequency: days, weeks, months, years", example="weeks")
-    recurrence_interval: Optional[int] = Field(None, ge=1, description="Interval for recurrence", example=2)
+    recurrence_frequency: Optional[str] = Field(None, description="Recurrence frequency: days, weeks, months, years", example="weeks")  # type: ignore
+    recurrence_interval: Optional[int] = Field(None, ge=1, description="Interval for recurrence", example=2)  # type: ignore
 
 class TodoCreate(TodoBase):
     """Model for creating a new todo"""

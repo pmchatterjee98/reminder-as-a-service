@@ -97,7 +97,7 @@ def get_jwks(force_refresh: bool = False) -> Dict:
         )
 
 
-def get_public_key_from_token(token: str) -> str:
+def get_public_key_from_token(token: str):
     """
     Extract the public key from JWKS that matches the token's kid (key ID).
     
@@ -105,7 +105,7 @@ def get_public_key_from_token(token: str) -> str:
         token: JWT token string
         
     Returns:
-        Public key in PEM format
+        Public key (RSA key object)
         
     Raises:
         TokenInvalidError: If token header is malformed or kid not found in JWKS
@@ -166,7 +166,7 @@ def verify_replit_token(token: str, expected_user_id: Optional[str] = None) -> D
         # Decode and verify token
         decoded = jwt.decode(
             token,
-            public_key,
+            public_key,  # type: ignore
             algorithms=['RS256'],  # Replit uses RS256
             issuer='https://replit.com',  # Verify issuer
             options={

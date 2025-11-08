@@ -216,6 +216,72 @@ def get_user_by_id(user_id: str) -> Optional[Dict]:
     return user
 
 
+def get_user_by_auth_id(auth_provider_id: str) -> Optional[Dict]:
+    """
+    Get user by authentication provider ID (e.g., Replit user ID).
+    
+    Args:
+        auth_provider_id: External authentication provider's user ID
+        
+    Returns:
+        User dictionary with decrypted contact info, or None if not found
+    """
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT * FROM users WHERE auth_provider_id = ? AND is_active = 1', (auth_provider_id,))
+    row = cursor.fetchone()
+    
+    user = dict(row) if row else None
+    conn.close()
+    
+    # Decrypt contact info if user exists
+    if user:
+        decrypted = encryption_manager.decrypt_contact_info(
+            email_encrypted=user.get('email_encrypted'),
+            phone_encrypted=user.get('phone_encrypted'),
+            whatsapp_encrypted=user.get('whatsapp_encrypted')
+        )
+        user['email_decrypted'] = decrypted['email']
+        user['phone_decrypted'] = decrypted['phone']
+        user['whatsapp_decrypted'] = decrypted['whatsapp']
+    
+    return user
+
+
+def get_all_users() -> List[Dict]:
+    """
+    Get all active users.
+    
+    Returns:
+        List of user dictionaries with decrypted contact info
+    """
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT * FROM users WHERE is_active = 1 ORDER BY created_at ASC')
+    rows = cursor.fetchall()
+    
+    users = []
+    for row in rows:
+        user = dict(row)
+        # Decrypt contact info
+        decrypted = encryption_manager.decrypt_contact_info(
+            email_encrypted=user.get('email_encrypted'),
+            phone_encrypted=user.get('phone_encrypted'),
+            whatsapp_encrypted=user.get('whatsapp_encrypted')
+        )
+        user['email_decrypted'] = decrypted['email']
+        user['phone_decrypted'] = decrypted['phone']
+        user['whatsapp_decrypted'] = decrypted['whatsapp']
+        users.append(user)
+    
+    conn.close()
+    return users
+
+
 def update_user_contact_info(user_id: str, email: Optional[str] = None,
                              phone: Optional[str] = None, 
                              whatsapp: Optional[str] = None) -> bool:
