@@ -54,7 +54,7 @@ Preferred communication style: Simple, everyday language.
 
 **Feature Specifications:**
 - **Automatic 24-Hour Reminders:** All tasks within 24 hours of their due date automatically trigger reminders.
-- **Quiet Hours Protection:** SMS and WhatsApp notifications respect quiet hours (12:00 AM - 9:30 AM) and are queued until 9:30 AM to avoid disturbing sleep. Email notifications continue normally as they're less intrusive.
+- **Quiet Hours Protection:** SMS and WhatsApp notifications respect quiet hours (12:00 AM - 9:30 AM) to avoid disturbing sleep. Email notifications continue normally as they're less intrusive. Note: For reminders with both email and SMS/WhatsApp configured, email will be sent during quiet hours while SMS/WhatsApp are skipped. SMS/WhatsApp-only reminders will retry on the next hourly check after 9:30 AM.
 - **Auto-Cleanup on Refresh:** Completed tasks are automatically deleted when the app refreshes.
 - **Recurring Task Management:** Automatic rescheduling based on daily, weekly, monthly, or yearly frequencies.
 - **Categorization and Prioritization:** Tasks can be assigned categories and priority levels.

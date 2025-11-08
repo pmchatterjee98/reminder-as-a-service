@@ -74,13 +74,11 @@ Manage your reminders at your RAAS dashboard.
         return False
 
 def send_sms_reminder(to_phone: str, todo_title: str, due_date: str) -> bool:
-    """Send an SMS reminder for a todo item using Twilio."""
+    """
+    Send an SMS reminder for a todo item using Twilio.
+    Note: Quiet hours (12am-9:30am) are enforced by the scheduler.
+    """
     if not to_phone or to_phone.strip() == "":
-        return False
-    
-    # Check quiet hours (12am-9:30am)
-    if is_quiet_hours():
-        print(f"Quiet hours active (12am-9:30am). SMS to {to_phone} will be sent after 9:30am.")
         return False
     
     try:
@@ -117,13 +115,11 @@ def send_sms_reminder(to_phone: str, todo_title: str, due_date: str) -> bool:
         return False
 
 def send_whatsapp_reminder(to_whatsapp: str, todo_title: str, due_date: str) -> bool:
-    """Send a WhatsApp reminder for a todo item using Twilio WhatsApp API."""
+    """
+    Send a WhatsApp reminder for a todo item using Twilio WhatsApp API.
+    Note: Quiet hours (12am-9:30am) are enforced by the scheduler.
+    """
     if not to_whatsapp or to_whatsapp.strip() == "":
-        return False
-    
-    # Check quiet hours (12am-9:30am)
-    if is_quiet_hours():
-        print(f"Quiet hours active (12am-9:30am). WhatsApp to {to_whatsapp} will be sent after 9:30am.")
         return False
     
     try:
