@@ -602,41 +602,91 @@ with col_header3:
             # Save changes button
             if st.button("💾 Save Changes", type="primary", use_container_width=True):
                 try:
-                    # Update all profile components
-                    success_profile = database_auth.update_user_profile(
-                        user_id=current_user_id,
-                        name=profile_name.strip() if profile_name else None,
-                        username=profile_username.strip() if profile_username else None
-                    )
+                    errors = []
+                    updated_fields = []
                     
-                    success_contact = database_auth.update_user_contact_info(
-                        user_id=current_user_id,
-                        email=profile_email.strip() if profile_email else None,
-                        phone=profile_phone.strip() if profile_phone else None,
-                        whatsapp=profile_whatsapp.strip() if profile_whatsapp else None
-                    )
+                    # Track which fields were changed
+                    name_changed = profile_name != (current_user.get('name') or '')
+                    username_changed = profile_username != (current_user.get('username') or '')
+                    email_changed = profile_email != (current_user.get('email_decrypted') or '')
+                    phone_changed = profile_phone != (current_user.get('phone_decrypted') or '')
+                    whatsapp_changed = profile_whatsapp != (current_user.get('whatsapp_decrypted') or '')
+                    email_consent_changed = profile_email_enabled != bool(current_user.get('consent_email'))
+                    sms_consent_changed = profile_sms_enabled != bool(current_user.get('consent_sms'))
+                    whatsapp_consent_changed = profile_whatsapp_enabled != bool(current_user.get('consent_whatsapp'))
                     
-                    success_consent = database_auth.update_user_consent(
-                        user_id=current_user_id,
-                        consent_email=profile_email_enabled,
-                        consent_sms=profile_sms_enabled,
-                        consent_whatsapp=profile_whatsapp_enabled
-                    )
+                    # Update profile (name and username)
+                    if name_changed or username_changed:
+                        success_profile = database_auth.update_user_profile(
+                            user_id=current_user_id,
+                            name=profile_name.strip() if name_changed and profile_name else None,
+                            username=profile_username.strip() if username_changed and profile_username else None
+                        )
+                        if success_profile:
+                            if name_changed:
+                                updated_fields.append("Name")
+                            if username_changed:
+                                updated_fields.append("Username")
+                        else:
+                            errors.append("Failed to update profile (username may already be taken)")
                     
-                    if success_profile or success_contact or success_consent:
+                    # Update contact info
+                    if email_changed or phone_changed or whatsapp_changed:
+                        success_contact = database_auth.update_user_contact_info(
+                            user_id=current_user_id,
+                            email=profile_email.strip() if email_changed and profile_email else None,
+                            phone=profile_phone.strip() if phone_changed and profile_phone else None,
+                            whatsapp=profile_whatsapp.strip() if whatsapp_changed and profile_whatsapp else None
+                        )
+                        if success_contact:
+                            if email_changed:
+                                updated_fields.append("Email")
+                            if phone_changed:
+                                updated_fields.append("Phone")
+                            if whatsapp_changed:
+                                updated_fields.append("WhatsApp")
+                        else:
+                            errors.append("Failed to update contact info (check email/phone format)")
+                    
+                    # Update notification preferences
+                    if email_consent_changed or sms_consent_changed or whatsapp_consent_changed:
+                        success_consent = database_auth.update_user_consent(
+                            user_id=current_user_id,
+                            consent_email=profile_email_enabled,
+                            consent_sms=profile_sms_enabled,
+                            consent_whatsapp=profile_whatsapp_enabled
+                        )
+                        if success_consent:
+                            if email_consent_changed:
+                                updated_fields.append("Email Notifications")
+                            if sms_consent_changed:
+                                updated_fields.append("SMS Notifications")
+                            if whatsapp_consent_changed:
+                                updated_fields.append("WhatsApp Notifications")
+                        else:
+                            errors.append("Failed to update notification preferences")
+                    
+                    if errors:
+                        for error in errors:
+                            st.error(f"❌ {error}")
+                    elif updated_fields:
                         # Refresh user data immediately from database
                         fresh_user_data = database_auth.get_user_by_id(current_user_id)
                         if fresh_user_data:
                             st.session_state.user_data = fresh_user_data
                             print(f"Profile updated: {fresh_user_data.get('name')}, {fresh_user_data.get('username')}")
                         
-                        st.success("✅ Profile updated successfully!")
+                        # Show which fields were updated
+                        fields_str = ", ".join(updated_fields)
+                        st.success(f"✅ Successfully updated: {fields_str}")
                         # Small delay to show success message
                         import time
-                        time.sleep(0.5)
+                        time.sleep(1.5)
+                        # Return to dashboard
+                        st.session_state.menu_view = 'main'
                         st.rerun()
                     else:
-                        st.error("❌ Failed to update profile. Please try again.")
+                        st.info("ℹ️ No changes detected")
                 except Exception as e:
                     st.error(f"❌ Error: {str(e)}")
                     print(f"Profile update error: {e}")
@@ -926,18 +976,18 @@ with st.sidebar:
         
         # 12-hour time input with AM/PM
         st.write("**Due Time** *")
-        time_col1, time_col2, time_col3 = st.columns([2, 2, 1])
+        time_col1, time_col2, time_col3 = st.columns([1.5, 1.5, 1.5])
         
         # Calculate current hour in 12-hour format (1-12)
         current_hour_24 = datetime.now().hour
         current_hour_12 = current_hour_24 % 12 or 12  # Convert 0 to 12, keep 1-12
         
         with time_col1:
-            hour_12 = st.selectbox("Hour", options=list(range(1, 13)), index=current_hour_12 - 1, key="add_hour", label_visibility="collapsed")
+            hour_12 = st.selectbox("Hour (1-12)", options=list(range(1, 13)), index=current_hour_12 - 1, key="add_hour")
         with time_col2:
-            minute = st.selectbox("Minute", options=[f"{m:02d}" for m in range(0, 60)], index=datetime.now().minute, key="add_minute", label_visibility="collapsed")
+            minute = st.selectbox("Minute (00-59)", options=[f"{m:02d}" for m in range(0, 60)], index=datetime.now().minute, key="add_minute")
         with time_col3:
-            am_pm = st.selectbox("AM/PM", options=["AM", "PM"], index=0 if datetime.now().hour < 12 else 1, key="add_ampm", label_visibility="collapsed")
+            am_pm = st.selectbox("AM/PM", options=["AM", "PM"], index=0 if datetime.now().hour < 12 else 1, key="add_ampm")
         
         st.subheader("Reminder Settings")
         st.info("⚡ Auto-reminders sent for all tasks within 24 hours of due date!")
@@ -1070,7 +1120,7 @@ def display_todo(todo):
             
             # 12-hour time input with AM/PM for editing
             st.write("**Due Time**")
-            edit_time_col1, edit_time_col2, edit_time_col3 = st.columns([2, 2, 1])
+            edit_time_col1, edit_time_col2, edit_time_col3 = st.columns([1.5, 1.5, 1.5])
             
             # Convert current time to 12-hour format
             current_hour_24 = due_datetime.hour
@@ -1079,11 +1129,11 @@ def display_todo(todo):
             current_minute = due_datetime.minute
             
             with edit_time_col1:
-                edit_hour_12 = st.selectbox("Hour", options=list(range(1, 13)), index=current_hour_12 - 1, key=f"edit_hour_{todo['id']}", label_visibility="collapsed")
+                edit_hour_12 = st.selectbox("Hour (1-12)", options=list(range(1, 13)), index=current_hour_12 - 1, key=f"edit_hour_{todo['id']}")
             with edit_time_col2:
-                edit_minute = st.selectbox("Minute", options=[f"{m:02d}" for m in range(0, 60)], index=current_minute, key=f"edit_minute_{todo['id']}", label_visibility="collapsed")
+                edit_minute = st.selectbox("Minute (00-59)", options=[f"{m:02d}" for m in range(0, 60)], index=current_minute, key=f"edit_minute_{todo['id']}")
             with edit_time_col3:
-                edit_am_pm = st.selectbox("AM/PM", options=["AM", "PM"], index=0 if current_am_pm == "AM" else 1, key=f"edit_ampm_{todo['id']}", label_visibility="collapsed")
+                edit_am_pm = st.selectbox("AM/PM", options=["AM", "PM"], index=0 if current_am_pm == "AM" else 1, key=f"edit_ampm_{todo['id']}")
             
             st.caption("⚡ Auto-reminders sent when task is within 24 hours of due date")
             
