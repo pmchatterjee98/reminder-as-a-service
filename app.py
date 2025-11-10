@@ -677,9 +677,8 @@ with col_header3:
                         fields_str = ", ".join(updated_fields)
                         st.session_state.profile_save_message = f"✅ Successfully updated: {fields_str}"
                         
-                        # Return to main menu
+                        # Return to main menu (Streamlit will auto-rerun, don't call st.rerun() manually)
                         st.session_state.menu_view = 'main'
-                        st.rerun()
                     else:
                         st.info("ℹ️ No changes detected")
                 except Exception as e:
@@ -946,9 +945,8 @@ with col_header3:
                     fields_str = ", ".join(updated_fields)
                     st.session_state.settings_save_message = f"✅ Successfully updated: {fields_str}"
                     
-                    # Return to main menu
+                    # Return to main menu (Streamlit will auto-rerun, don't call st.rerun() manually)
                     st.session_state.menu_view = 'main'
-                    st.rerun()
                 else:
                     st.info("ℹ️ No changes detected")
 
