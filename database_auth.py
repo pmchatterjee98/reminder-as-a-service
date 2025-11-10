@@ -203,8 +203,105 @@ def init_auth_db():
             print("Migrating database: Adding username and name columns...")
             cursor.execute("ALTER TABLE users ADD COLUMN username TEXT")
             cursor.execute("ALTER TABLE users ADD COLUMN name TEXT")
-            # Note: UNIQUE constraint on username will be enforced at application level for existing rows
             print("Migration complete: username and name columns added")
+    
+    # Migration: Enforce UNIQUE constraint on username
+    if users_table_exists:
+        # Check if UNIQUE constraint already exists on username
+        cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'")
+        table_sql = cursor.fetchone()
+        has_username_unique = False
+        
+        if table_sql and table_sql[0]:
+            # Check if schema contains "username TEXT UNIQUE" (case-insensitive)
+            has_username_unique = 'USERNAME TEXT UNIQUE' in table_sql[0].upper()
+        
+        if not has_username_unique:
+            print("Migrating database: Adding UNIQUE constraint to username...")
+            
+            # Step 1: Normalize empty usernames to NULL
+            cursor.execute("UPDATE users SET username = NULL WHERE username = ''")
+            
+            # Step 2: Find and handle duplicate usernames
+            cursor.execute('''
+                SELECT username, COUNT(*) as cnt
+                FROM users
+                WHERE username IS NOT NULL
+                GROUP BY username
+                HAVING cnt > 1
+            ''')
+            duplicates = cursor.fetchall()
+            
+            if duplicates:
+                print(f"Found {len(duplicates)} duplicate username entries. Deduplicating...")
+                for username, count in duplicates:
+                    # Keep the first user, deactivate the rest
+                    cursor.execute('''
+                        SELECT id FROM users
+                        WHERE username = ?
+                        ORDER BY created_at ASC
+                    ''', (username,))
+                    user_ids = [row[0] for row in cursor.fetchall()]
+                    
+                    if len(user_ids) > 1:
+                        print(f"  Keeping user {user_ids[0]} with username '{username}', deactivating {len(user_ids)-1} duplicate(s)")
+                        for i, dup_id in enumerate(user_ids[1:], 1):
+                            # Deactivate duplicates with modified username to avoid NULL constraint issues
+                            new_username = f"{username}_deactivated_{i}"
+                            cursor.execute('UPDATE users SET is_active = 0, username = ? WHERE id = ?', (new_username, dup_id))
+            
+            # Step 3: Get current table columns for safe data migration
+            cursor.execute("PRAGMA table_info(users)")
+            columns = [col[1] for col in cursor.fetchall()]
+            
+            # Step 4: Rebuild users table with UNIQUE constraint on username
+            print("Rebuilding users table with UNIQUE constraint on username...")
+            
+            cursor.execute('''
+                CREATE TABLE users_new (
+                    id TEXT PRIMARY KEY,
+                    username TEXT UNIQUE,
+                    name TEXT,
+                    email_hash TEXT UNIQUE NOT NULL,
+                    email_encrypted TEXT NOT NULL,
+                    phone_encrypted TEXT,
+                    whatsapp_encrypted TEXT,
+                    auth_provider TEXT DEFAULT 'replit',
+                    auth_provider_id TEXT UNIQUE,
+                    consent_email INTEGER DEFAULT 0,
+                    consent_sms INTEGER DEFAULT 0,
+                    consent_whatsapp INTEGER DEFAULT 0,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    last_login TEXT,
+                    is_active INTEGER DEFAULT 1
+                )
+            ''')
+            
+            # Copy data from old table (only active users with unique username)
+            # Build column list dynamically based on what exists
+            column_list = ', '.join([col for col in columns if col in [
+                'id', 'username', 'name', 'email_hash', 'email_encrypted', 
+                'phone_encrypted', 'whatsapp_encrypted', 'auth_provider', 
+                'auth_provider_id', 'consent_email', 'consent_sms', 
+                'consent_whatsapp', 'created_at', 'last_login', 'is_active'
+            ]])
+            
+            cursor.execute(f'''
+                INSERT INTO users_new ({column_list})
+                SELECT {column_list}
+                FROM users WHERE is_active = 1
+            ''')
+            
+            # Drop old table and rename new one
+            cursor.execute('DROP TABLE users')
+            cursor.execute('ALTER TABLE users_new RENAME TO users')
+            
+            # Recreate indexes
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_users_email_hash ON users(email_hash)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_users_auth_provider_id ON users(auth_provider_id)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)')
+            
+            print("Migration complete: UNIQUE constraint applied to username")
     
     conn.commit()
     conn.close()
@@ -301,9 +398,17 @@ def create_user(email: str, auth_provider: str = 'replit',
             # Get existing user by auth_provider_id
             existing_user = get_user_by_auth_id(auth_provider_id)
             return existing_user['id'] if existing_user else None
+        elif 'username' in error_msg:
+            # Duplicate username - return a special error code
+            print(f"User creation failed: duplicate username '{username}'")
+            return 'DUPLICATE_USERNAME'
+        elif 'email' in error_msg:
+            # Duplicate email
+            print(f"User creation failed: duplicate email")
+            return 'DUPLICATE_EMAIL'
         else:
-            # Duplicate email or other constraint violation
-            print(f"User creation failed (duplicate email?): {e}")
+            # Other constraint violation
+            print(f"User creation failed: {e}")
             return None
     finally:
         conn.close()

@@ -82,6 +82,27 @@ if st.session_state.logged_out:
         # Use st.link_button for proper navigation in same window
         st.link_button("👤 Sign in with Different Account", "https://replit.com/logout", use_container_width=True)
     
+    st.markdown("---")
+    
+    # Sign up call-to-action for new users
+    st.markdown("""
+    <div style="text-align: center; margin-top: 2rem; padding: 1.5rem; background: linear-gradient(135deg, rgba(108, 92, 231, 0.1) 0%, rgba(0, 209, 178, 0.1) 100%); border-radius: 12px; border: 1px solid rgba(108, 92, 231, 0.3);">
+        <h3 style="color: #00D1B2; margin-top: 0;">Don't have RAAS?</h3>
+        <p style="color: rgba(248, 249, 250, 0.8); font-size: 1.1rem; margin: 1rem 0;">
+            Sign up and never miss anything! ⚡
+        </p>
+        <p style="color: rgba(248, 249, 250, 0.6); font-size: 0.9rem; margin-bottom: 1.5rem;">
+            Create your free account and start managing reminders across email, SMS, and WhatsApp
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if st.button("🚀 Sign Up for RAAS", type="primary", use_container_width=True):
+        # Clear the logged_out flag to show the sign-up/onboarding flow
+        st.session_state.logged_out = False
+        st.session_state.logout_username = None
+        st.rerun()
+    
     st.stop()
 
 # Check if user is authenticated via Replit
@@ -140,7 +161,7 @@ if st.session_state.show_onboarding:
         username = st.text_input("Username *", placeholder="Choose a unique username")
         
         st.subheader("📧 Contact Information")
-        st.write("We'll use this information to send you reminders.")
+        st.info("📧 **Email is required.** You can also add Phone or WhatsApp for additional reminder options.")
         
         email = st.text_input("Email Address *", placeholder="your@email.com")
         phone = st.text_input("Phone (for SMS)", placeholder="+1234567890")
@@ -153,36 +174,59 @@ if st.session_state.show_onboarding:
         consent_sms = st.checkbox("Send me SMS reminders", value=False)
         consent_whatsapp = st.checkbox("Send me WhatsApp reminders", value=False)
         
-        st.caption("You can change these preferences anytime in your profile.")
+        st.caption("💡 You can change these preferences anytime in your profile.")
         
-        submitted = st.form_submit_button("Complete Setup", use_container_width=True)
+        submitted = st.form_submit_button("🚀 Complete Setup & Start Using RAAS", use_container_width=True, type="primary")
         
         if submitted:
-            if email and name and username:
+            # Validation
+            errors = []
+            
+            # Check required fields
+            if not name or not name.strip():
+                errors.append("Full Name is required")
+            if not username or not username.strip():
+                errors.append("Username is required")
+            if not email or not email.strip():
+                errors.append("Email Address is required")
+            
+            # Check at least one notification method is enabled
+            if not consent_email and not consent_sms and not consent_whatsapp:
+                errors.append("Please enable at least one notification method to receive reminders")
+            
+            if errors:
+                for error in errors:
+                    st.error(f"❌ {error}")
+            else:
                 # Create user with profile, contact info and consents
                 user_id = database_auth.create_user(
-                    email=email,
+                    email=email.strip(),  # Email is required by database schema
                     auth_provider='replit',
                     auth_provider_id=auth_context.replit_user_id,
-                    username=username,
-                    name=name,
-                    phone=phone if phone else None,
-                    whatsapp=whatsapp if whatsapp else None,
+                    username=username.strip(),
+                    name=name.strip(),
+                    phone=phone.strip() if phone else None,
+                    whatsapp=whatsapp.strip() if whatsapp else None,
                     consent_email=consent_email,
                     consent_sms=consent_sms,
                     consent_whatsapp=consent_whatsapp
                 )
                 
-                if user_id:
+                if user_id and user_id not in ['DUPLICATE_USERNAME', 'DUPLICATE_EMAIL']:
                     st.session_state.user_id = user_id
                     st.session_state.user_data = database_auth.get_user_by_id(user_id)
                     st.session_state.show_onboarding = False
-                    st.success("✅ Account created successfully!")
+                    st.success("✅ Account created successfully! Welcome to RAAS!")
+                    st.balloons()
+                    import time
+                    time.sleep(1)
                     st.rerun()
+                elif user_id == 'DUPLICATE_USERNAME':
+                    st.error(f"❌ Username **{username.strip()}** is already taken. Please choose a different username.")
+                elif user_id == 'DUPLICATE_EMAIL':
+                    st.error(f"❌ Email **{email.strip()}** is already registered. Please use a different email or log in with your existing account.")
                 else:
-                    st.error("❌ Failed to create account. Username may already be taken or there was an error.")
-            else:
-                st.error("⚠️ Please provide your name, username, and email address.")
+                    st.error("❌ Failed to create account due to a database error. Please try again or contact support.")
     
     st.stop()
 
