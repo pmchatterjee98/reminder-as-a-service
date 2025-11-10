@@ -79,24 +79,28 @@ if st.session_state.logged_out:
             st.rerun()
     
     with col2:
+        # Redirect to Replit logout (same window, not new tab)
         st.markdown("""
-        <a href="https://replit.com/logout" target="_blank" style="text-decoration: none;">
-            <button style="
-                width: 100%;
-                padding: 0.5rem 1rem;
-                background: linear-gradient(135deg, #00D1B2 0%, #00b89f 100%);
-                color: white;
-                border: none;
-                border-radius: 8px;
-                font-size: 1rem;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.2s ease;
-            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0, 209, 178, 0.4)';" 
-               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-                👤 Sign in with Different Account
-            </button>
-        </a>
+        <script>
+        function logoutReplit() {
+            window.location.href = 'https://replit.com/logout';
+        }
+        </script>
+        <button onclick="logoutReplit()" style="
+            width: 100%;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, #00D1B2 0%, #00b89f 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0, 209, 178, 0.4)';" 
+           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+            👤 Sign in with Different Account
+        </button>
         """, unsafe_allow_html=True)
     
     st.stop()
@@ -683,15 +687,13 @@ with col_header3:
                         # Use st.balloons for visual feedback
                         st.balloons()
                         
-                        # Set flag to auto-return to dashboard on next interaction
-                        st.session_state.profile_updated = True
-                        st.info("↩️ Returning to dashboard...")
+                        st.info("✅ Saved! Click outside to close this menu")
                         
                         # Small delay to show success message
                         import time
                         time.sleep(2)
                         
-                        # Return to dashboard
+                        # Return to main menu (popover stays open, but shows main menu)
                         st.session_state.menu_view = 'main'
                         st.rerun()
                     else:
@@ -962,13 +964,13 @@ with col_header3:
                     # Use st.balloons for visual feedback
                     st.balloons()
                     
-                    st.info("↩️ Returning to dashboard...")
+                    st.info("✅ Saved! Click outside to close this menu")
                     
                     # Small delay to show success message
                     import time
                     time.sleep(2)
                     
-                    # Return to dashboard (close popover by setting menu view to main)
+                    # Return to main menu (popover stays open, but shows main menu)
                     st.session_state.menu_view = 'main'
                     st.rerun()
                 else:
