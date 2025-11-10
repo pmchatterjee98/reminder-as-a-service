@@ -79,29 +79,8 @@ if st.session_state.logged_out:
             st.rerun()
     
     with col2:
-        # Redirect to Replit logout (same window, not new tab)
-        st.markdown("""
-        <script>
-        function logoutReplit() {
-            window.location.href = 'https://replit.com/logout';
-        }
-        </script>
-        <button onclick="logoutReplit()" style="
-            width: 100%;
-            padding: 0.5rem 1rem;
-            background: linear-gradient(135deg, #00D1B2 0%, #00b89f 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0, 209, 178, 0.4)';" 
-           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-            👤 Sign in with Different Account
-        </button>
-        """, unsafe_allow_html=True)
+        # Use st.link_button for proper navigation in same window
+        st.link_button("👤 Sign in with Different Account", "https://replit.com/logout", use_container_width=True)
     
     st.stop()
 
@@ -481,6 +460,20 @@ with col_header3:
             </div>
             """, unsafe_allow_html=True)
             
+            # Show success message if profile/settings was just saved
+            if 'profile_save_message' in st.session_state:
+                st.success(st.session_state.profile_save_message)
+                st.balloons()
+                st.info("✅ Changes saved! You can close this menu now")
+                del st.session_state.profile_save_message
+            
+            # Show success message if settings was just saved
+            if 'settings_save_message' in st.session_state:
+                st.success(st.session_state.settings_save_message)
+                st.balloons()
+                st.info("✅ Changes saved! You can close this menu now")
+                del st.session_state.settings_save_message
+            
             # Profile button
             if st.button("👤 Profile", use_container_width=True):
                 st.session_state.menu_view = 'profile'
@@ -680,20 +673,11 @@ with col_header3:
                             st.session_state.user_data = fresh_user_data
                             print(f"Profile updated: {fresh_user_data.get('name')}, {fresh_user_data.get('username')}")
                         
-                        # Show which fields were updated
+                        # Store success message in session state to persist across rerun
                         fields_str = ", ".join(updated_fields)
-                        st.success(f"✅ Successfully updated: {fields_str}")
+                        st.session_state.profile_save_message = f"✅ Successfully updated: {fields_str}"
                         
-                        # Use st.balloons for visual feedback
-                        st.balloons()
-                        
-                        st.info("✅ Saved! Click outside to close this menu")
-                        
-                        # Small delay to show success message
-                        import time
-                        time.sleep(2)
-                        
-                        # Return to main menu (popover stays open, but shows main menu)
+                        # Return to main menu
                         st.session_state.menu_view = 'main'
                         st.rerun()
                     else:
@@ -955,22 +939,14 @@ with col_header3:
                     for error in errors:
                         st.error(f"❌ {error}")
                 elif updated_fields:
-                    # Show which fields were updated
-                    fields_str = ", ".join(updated_fields)
-                    st.success(f"✅ Successfully updated: {fields_str}")
                     # Refresh user data to reflect changes
                     st.session_state.user_data = get_user_by_id(st.session_state.user_id)
                     
-                    # Use st.balloons for visual feedback
-                    st.balloons()
+                    # Store success message in session state to persist across rerun
+                    fields_str = ", ".join(updated_fields)
+                    st.session_state.settings_save_message = f"✅ Successfully updated: {fields_str}"
                     
-                    st.info("✅ Saved! Click outside to close this menu")
-                    
-                    # Small delay to show success message
-                    import time
-                    time.sleep(2)
-                    
-                    # Return to main menu (popover stays open, but shows main menu)
+                    # Return to main menu
                     st.session_state.menu_view = 'main'
                     st.rerun()
                 else:
