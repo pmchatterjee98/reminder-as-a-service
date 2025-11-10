@@ -1476,19 +1476,6 @@ else:
     with col3:
         selected_priority = st.selectbox("Priority", priorities)
     
-    # Export button
-    st.markdown("---")
-    
-    if st.button("📥 Export to CSV", use_container_width=False):
-        csv_data = export_to_csv(todos)
-        st.download_button(
-            label="Download CSV",
-            data=csv_data,
-            file_name=f"todos_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-            mime="text/csv",
-            key="download_csv"
-        )
-    
     st.markdown("---")
     
     # Quick Overview - Bullet Point List
@@ -1614,6 +1601,19 @@ else:
         """, unsafe_allow_html=True)
         for todo in completed:
             display_todo(todo)
+    
+    # Export button at the end
+    st.markdown("---")
+    
+    if st.button("📥 Export to CSV", use_container_width=False):
+        csv_data = export_to_csv(todos)
+        st.download_button(
+            label="Download CSV",
+            data=csv_data,
+            file_name=f"todos_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+            mime="text/csv",
+            key="download_csv"
+        )
 
 # Configuration section
 st.markdown("<br>", unsafe_allow_html=True)
