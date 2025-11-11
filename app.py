@@ -7,24 +7,23 @@ import scheduler
 import csv
 import io
 import os
-from auth_replit import ReplitAuthContext, auth_manager, get_login_html
+from auth_email import init_email_auth_db, get_email_session, delete_email_session, cleanup_expired_sessions
+from pages_auth import show_login_page, show_onboarding_page
 
 # Initialize databases
 database.init_db()
 database_auth.init_auth_db()
+init_email_auth_db()
 
 # Start the reminder scheduler
 scheduler.start_scheduler()
 
-#=============================================================================
-# AUTHENTICATION LAYER
-#=============================================================================
+# Cleanup expired sessions on startup
+cleanup_expired_sessions()
 
-# Get Replit Auth context
-auth_context = ReplitAuthContext.from_streamlit()
-
-# Debug: Print auth status to console (helpful for troubleshooting)
-print(f"Auth Status: {auth_context}")
+#=============================================================================
+# AUTHENTICATION LAYER (Email Magic Link)
+#=============================================================================
 
 # Initialize session state
 if 'user_id' not in st.session_state:
@@ -37,17 +36,25 @@ if 'logged_out' not in st.session_state:
     st.session_state.logged_out = False
 if 'logout_username' not in st.session_state:
     st.session_state.logout_username = None
+if 'session_id' not in st.session_state:
+    st.session_state.session_id = None
+if 'onboarding_email' not in st.session_state:
+    st.session_state.onboarding_email = None
 
 # Check if user intentionally logged out
 if st.session_state.logged_out:
-    # Show login screen
+    # Clear session
+    if st.session_state.session_id:
+        delete_email_session(st.session_state.session_id)
+        st.session_state.session_id = None
+    
+    # Show logout confirmation
     st.set_page_config(
         page_title="RAAS — Logged Out",
         page_icon="⚡",
         layout="centered"
     )
     
-    # Show logout confirmation
     st.markdown("""
     <div style="text-align: center; margin-top: 3rem;">
         <h1 style="font-size: 48px; margin-bottom: 16px;">⚡</h1>
@@ -61,188 +68,45 @@ if st.session_state.logged_out:
     else:
         st.success("✅ You've been logged out successfully")
     
-    st.markdown("""
-    <div style="background: rgba(108, 92, 231, 0.1); border-left: 4px solid #6C5CE7; padding: 1rem; border-radius: 8px; margin: 1.5rem 0;">
-        <h4 style="color: #6C5CE7; margin-top: 0;">Choose Your Next Step</h4>
-        <p style="color: rgba(248, 249, 250, 0.9); line-height: 1.6; margin-bottom: 0.75rem;">
-            <strong>Same Account:</strong> Click "Return to RAAS" to log back in as <strong>{}</strong>
-        </p>
-        <p style="color: rgba(248, 249, 250, 0.9); line-height: 1.6; margin-bottom: 0;">
-            <strong>Different Account:</strong> Click "Log in with Different Account" to log out of Replit and log in with another username
-        </p>
-    </div>
-    """.format(st.session_state.logout_username or "current user"), unsafe_allow_html=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
     
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("🔐 Return to RAAS", type="primary", use_container_width=True):
-            # Clear the logged_out flag to trigger normal auth flow
-            st.session_state.logged_out = False
-            st.session_state.logout_username = None
-            st.rerun()
-    
-    with col2:
-        # Use st.link_button for proper navigation in same window
-        st.link_button("👤 Log in with Different Account", "https://replit.com/logout", use_container_width=True)
-    
-    # Note: We don't show a "Sign Up" button here because:
-    # 1. If the user is still authenticated with Replit, they already have an account
-    # 2. To create a NEW account, they must log out of Replit first and log in with a different Replit account
-    # 3. The "Log in with Different Account" button above handles this flow
+    if st.button("🔐 Log In Again", type="primary", use_container_width=True):
+        # Clear the logged_out flag and reset session
+        st.session_state.logged_out = False
+        st.session_state.logout_username = None
+        st.session_state.user_id = None
+        st.session_state.user_data = None
+        st.rerun()
     
     st.stop()
 
-# Check if user is authenticated via Replit
-if not auth_context.is_authenticated:
-    # Show login page
-    st.set_page_config(
-        page_title="RAAS — Sign In",
-        page_icon="⚡",
-        layout="centered"
-    )
-    
-    # Show styled login page
-    st.markdown("""
-    <div style="text-align: center; margin-top: 3rem;">
-        <h1 style="font-size: 48px; margin-bottom: 16px;">⚡</h1>
-        <h1 style="color: #6C5CE7; margin: 0 0 8px 0; font-size: 32px;">RAAS</h1>
-        <p style="color: #00D1B2; font-size: 14px; margin-bottom: 32px;">Reminder as a Service — Never miss what matters</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.info("🔐 **Sign up or log in with your Replit account to continue**")
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # Create centered button using columns
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        # Use a link button to trigger Replit auth
-        st.link_button(
-            "🔐 Continue with Replit",
-            "https://replit.com/auth_with_repl_site?domain=" + os.getenv("REPLIT_DOMAINS", "").split(",")[0] if os.getenv("REPLIT_DOMAINS") else "#",
-            type="primary",
-            use_container_width=True
-        )
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.caption("💡 **New users** will be guided through a quick setup. **Existing users** will go straight to their dashboard.")
-    
-    st.stop()
-
-# User is authenticated - check if they exist in our database
-if st.session_state.user_id is None:
-    # Try to get or create user
-    user = auth_manager.get_or_create_user(auth_context)
-    
-    if user is None:
-        # New user needs onboarding
-        st.session_state.show_onboarding = True
+# Check if user has an active session
+if st.session_state.session_id:
+    session = get_email_session(st.session_state.session_id)
+    if session:
+        # Session is valid - get user data
+        if st.session_state.user_id is None:
+            st.session_state.user_id = session['user_id']
+            st.session_state.user_data = database_auth.get_user_by_id(session['user_id'])
+            
+            # Delete completed tasks for this user on app refresh
+            deleted_count = database_multi_user.delete_completed_tasks_for_user(session['user_id'])
+            if deleted_count > 0:
+                print(f"Removed {deleted_count} completed task(s) for user {session['user_id']} on refresh")
     else:
-        # Existing user
-        st.session_state.user_id = user['id']
-        st.session_state.user_data = user
-        
-        # Delete completed tasks for this user on app refresh
-        deleted_count = database_multi_user.delete_completed_tasks_for_user(user['id'])
-        if deleted_count > 0:
-            print(f"Removed {deleted_count} completed task(s) for user {user['id']} on refresh")
+        # Session expired - clear it
+        st.session_state.session_id = None
+        st.session_state.user_id = None
+        st.session_state.user_data = None
+
+# If no active session, show login page
+if st.session_state.user_id is None and not st.session_state.show_onboarding:
+    show_login_page()
+    st.stop()
 
 # Show onboarding if needed
-if st.session_state.show_onboarding:
-    st.set_page_config(
-        page_title="Welcome to RAAS",
-        page_icon="⚡",
-        layout="centered"
-    )
-    
-    st.markdown("""
-    <div style="text-align: center; margin-bottom: 2rem;">
-        <h1 style="color: #6C5CE7; margin-bottom: 0.5rem;">⚡ Welcome to RAAS</h1>
-        <p style="color: rgba(248, 249, 250, 0.7); font-size: 1.1rem;">
-            Reminder as a Service — Never miss what matters
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.info(f"👋 Hello, **{auth_context.user_name}**! Let's set up your account.")
-    
-    with st.form("onboarding_form"):
-        st.subheader("👤 Profile Information")
-        st.write("Tell us about yourself.")
-        
-        name = st.text_input("Full Name *", placeholder="John Doe", value=auth_context.user_name or "")
-        username = st.text_input("Username *", placeholder="Choose a unique username")
-        
-        st.subheader("📧 Contact Information")
-        st.info("📧 **Email is required.** You can also add Phone or WhatsApp for additional reminder options.")
-        
-        email = st.text_input("Email Address *", placeholder="your@email.com")
-        phone = st.text_input("Phone (for SMS)", placeholder="+1234567890")
-        whatsapp = st.text_input("WhatsApp", placeholder="+1234567890")
-        
-        st.subheader("🔔 Notification Preferences")
-        st.write("Choose how you'd like to receive reminders:")
-        
-        consent_email = st.checkbox("Send me email reminders", value=True)
-        consent_sms = st.checkbox("Send me SMS reminders", value=False)
-        consent_whatsapp = st.checkbox("Send me WhatsApp reminders", value=False)
-        
-        st.caption("💡 You can change these preferences anytime in your profile.")
-        
-        submitted = st.form_submit_button("🚀 Complete Setup & Start Using RAAS", use_container_width=True, type="primary")
-        
-        if submitted:
-            # Validation
-            errors = []
-            
-            # Check required fields
-            if not name or not name.strip():
-                errors.append("Full Name is required")
-            if not username or not username.strip():
-                errors.append("Username is required")
-            if not email or not email.strip():
-                errors.append("Email Address is required")
-            
-            # Check at least one notification method is enabled
-            if not consent_email and not consent_sms and not consent_whatsapp:
-                errors.append("Please enable at least one notification method to receive reminders")
-            
-            if errors:
-                for error in errors:
-                    st.error(f"❌ {error}")
-            else:
-                # Create user with profile, contact info and consents
-                user_id = database_auth.create_user(
-                    email=email.strip(),  # Email is required by database schema
-                    auth_provider='replit',
-                    auth_provider_id=auth_context.replit_user_id,
-                    username=username.strip(),
-                    name=name.strip(),
-                    phone=phone.strip() if phone else None,
-                    whatsapp=whatsapp.strip() if whatsapp else None,
-                    consent_email=consent_email,
-                    consent_sms=consent_sms,
-                    consent_whatsapp=consent_whatsapp
-                )
-                
-                if user_id and user_id not in ['DUPLICATE_USERNAME', 'DUPLICATE_EMAIL']:
-                    st.session_state.user_id = user_id
-                    st.session_state.user_data = database_auth.get_user_by_id(user_id)
-                    st.session_state.show_onboarding = False
-                    st.success("✅ Account created successfully! Welcome to RAAS!")
-                    st.balloons()
-                    import time
-                    time.sleep(1)
-                    st.rerun()
-                elif user_id == 'DUPLICATE_USERNAME':
-                    st.error(f"❌ Username **{username.strip()}** is already taken. Please choose a different username.")
-                elif user_id == 'DUPLICATE_EMAIL':
-                    st.error(f"❌ Email **{email.strip()}** is already registered. Please use a different email or log in with your existing account.")
-                else:
-                    st.error("❌ Failed to create account due to a database error. Please try again or contact support.")
-    
+if st.session_state.show_onboarding and st.session_state.onboarding_email:
+    show_onboarding_page(st.session_state.onboarding_email)
     st.stop()
 
 # User is fully authenticated and onboarded
