@@ -32,7 +32,8 @@ class ReplitAuthContext:
         self.replit_user_id = user_id
         self.user_name = user_name
         self.user_roles = user_roles
-        self.is_authenticated = user_id is not None
+        # User is authenticated only if user_id exists and is not empty
+        self.is_authenticated = bool(user_id and user_id.strip())
     
     @classmethod
     def from_headers(cls, headers: Dict[str, str]) -> 'ReplitAuthContext':

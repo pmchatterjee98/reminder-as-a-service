@@ -22,6 +22,9 @@ scheduler.start_scheduler()
 # Get Replit Auth context
 auth_context = ReplitAuthContext.from_streamlit()
 
+# Debug: Print auth status to console (helpful for troubleshooting)
+print(f"Auth Status: {auth_context}")
+
 # Initialize session state
 if 'user_id' not in st.session_state:
     st.session_state.user_id = None
@@ -97,7 +100,24 @@ if not auth_context.is_authenticated:
         page_icon="⚡",
         layout="centered"
     )
+    
+    # Show styled login page
+    st.markdown("""
+    <div style="text-align: center; margin-top: 3rem;">
+        <h1 style="font-size: 48px; margin-bottom: 16px;">⚡</h1>
+        <h1 style="color: #6C5CE7; margin: 0 0 8px 0; font-size: 32px;">RAAS</h1>
+        <p style="color: #00D1B2; font-size: 14px; margin-bottom: 32px;">Reminder as a Service — Never miss what matters</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.info("🔐 **Sign in with your Replit account to access RAAS**")
+    
+    # Embed Replit Auth button
     st.components.v1.html(get_login_html("Sign in with your Replit account to access RAAS"), height=600, scrolling=False)
+    
+    st.markdown("---")
+    st.caption("💡 **New to RAAS?** Sign in with Replit and you'll be guided through a quick setup to create your account.")
+    
     st.stop()
 
 # User is authenticated - check if they exist in our database
