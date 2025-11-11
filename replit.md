@@ -35,7 +35,7 @@ Preferred communication style: Simple, everyday language.
 **REST API Architecture:**
 - Implemented with **FastAPI** for programmatic access, providing high performance and automatic OpenAPI/Swagger documentation.
 - **Endpoints:** CRUD operations for todos, statistics, and toggling completion status.
-- **Authentication:** Layered security model including a mandatory API Key, Replit Auth Headers, and database verification for user existence and onboarding. Designed for internal/Replit deployment.
+- **Authentication:** Layered security model including a mandatory API Key, session token validation via Authorization header (Bearer token only), and database verification for user existence and onboarding. Platform-independent design works on any hosting service.
 
 **Backend Architecture:**
 - Monolithic Python application structure with modular components.
@@ -44,13 +44,15 @@ Preferred communication style: Simple, everyday language.
 - **Notification System:** Supports multi-channel delivery via **SMTP (Email)**, **Twilio (SMS)**, and **Twilio (WhatsApp)** with quiet hours protection for SMS/WhatsApp (12am-9:30am).
 
 **Multi-User Architecture:**
-- **Dual-ID System:** Each user has an internal RAAS UUID and an external Replit ID for authentication lookup.
-- **Authentication Flow:** Integrates with Replit Auth, looking up users by `X-Replit-User-Id` to retrieve the internal UUID for all database operations.
-- **User Isolation:** All CRUD operations strictly filter by internal user ID.
-- **Contact Data Security:** Email/phone/WhatsApp encrypted with Fernet; email also hashed with SHA-256.
-- **Onboarding Flow:** First-time users complete profile setup (name, username, contact info) and consent preferences.
+- **Platform-Independent Authentication:** Standalone email magic link system - no platform dependencies, works on any hosting service.
+- **Magic Link Flow:** Passwordless authentication via one-time email links with secure token generation and 1-hour expiration.
+- **Session Management:** 30-day sessions stored in encrypted database with automatic cleanup of expired sessions and tokens.
+- **User Isolation:** All CRUD operations strictly filter by internal user ID (UUID).
+- **Contact Data Security:** Email/phone/WhatsApp encrypted with Fernet; email also hashed with SHA-256 for secure lookups.
+- **Authentication Database:** Dedicated tables for magic links (one-time tokens) and email sessions (persistent user sessions).
+- **Onboarding Flow:** First-time users receive magic link, click to verify email, then complete profile setup (name, username, contact info) and consent preferences.
 - **User Profile System:** Each user has a unique username and display name, stored in encrypted database.
-- **Logout Flow:** Clicking logout shows a confirmation screen with two options: (1) "Return to RAAS" which auto-logs you back in if still authenticated with Replit, or (2) "Log Out of Replit" to fully sign out. Clear explanation of Replit Auth behavior helps users understand auto-login and account switching.
+- **Logout Flow:** Simple logout button clears session from database and browser, redirects to login page. Users log back in by requesting a new magic link.
 
 **Feature Specifications:**
 - **Automatic 24-Hour Reminders:** All tasks within 24 hours of their due date automatically trigger reminders.
@@ -74,8 +76,22 @@ Preferred communication style: Simple, everyday language.
 - Responsive CSS with media queries for all screen sizes.
 - Browser notification support for in-app mobile alarms.
 
+**Authentication Architecture:**
+- **Email Magic Links:** Passwordless authentication system that works on any hosting platform.
+- **Security Features:** One-time use tokens, 1-hour link expiration, secure token generation with secrets module.
+- **Email Templates:** Beautiful HTML email templates with branding and clear call-to-action buttons.
+- **Session Security:** Sessions stored with 30-day expiration, automatic cleanup of expired data.
+- **Required Environment Variables:**
+  - `SENDER_EMAIL`: Gmail address for sending magic link emails
+  - `SENDER_PASSWORD`: Gmail app-specific password for SMTP authentication
+  - `SESSION_SECRET`: Secret key for session token generation (auto-generated in dev)
+  - `ENCRYPTION_KEY`: Fernet key for encrypting contact data (auto-generated in dev)
+  - `RAAS_API_KEY`: API authentication key for REST API access (optional in dev)
+
 **Deployment:**
-- Supports Replit Publishing (recommended), Docker Containerization, and CI/CD with GitHub Actions.
+- **Platform-Independent:** Works on any hosting service (Heroku, AWS, Google Cloud, DigitalOcean, Replit, etc.).
+- **Deployment Options:** Replit Publishing, Docker Containerization, traditional VPS, and CI/CD with GitHub Actions.
+- **Production Requirements:** Set all required environment variables, use HTTPS for secure session tokens, enable API key authentication.
 
 ## External Dependencies
 

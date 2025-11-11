@@ -12,6 +12,7 @@ from datetime import datetime
 import database
 import database_multi_user
 import database_auth
+from auth_email import get_email_session
 import os
 
 # Initialize FastAPI app with metadata for Swagger
@@ -114,50 +115,68 @@ def verify_api_auth(request: Request, api_key: Optional[str] = Query(None, alias
 
 def get_current_user(request: Request, api_authenticated: bool = Depends(verify_api_auth)) -> str:
     """
-    Extract and validate user from Replit Auth headers.
+    Extract and validate user from email session.
     
     SECURITY MODEL:
     - API Key Protection: Set RAAS_API_KEY environment variable to require API key
-      authentication for all API requests. This prevents header spoofing attacks.
+      authentication for all API requests. This prevents unauthorized access.
     
-    - Header Validation: Reads X-Replit-User-Id and X-Replit-User-Name headers.
-      Both headers must be present for consistency.
+    - Session Validation: Reads session token from Authorization header (Bearer token).
+      Session must be valid and not expired. Query parameters are NOT supported for
+      security reasons (tokens would be logged and leaked via Referer headers).
     
     - Database Verification: Ensures user exists in database (completed onboarding).
     
     PRODUCTION DEPLOYMENT:
     1. ALWAYS set RAAS_API_KEY to a secure random value
-    2. Use HTTPS only (handled by Replit automatically)
-    3. Consider adding rate limiting for additional security
+    2. Use HTTPS only to protect session tokens in transit
+    3. Send session tokens ONLY via Authorization header: Authorization: Bearer <token>
+    4. Consider adding rate limiting for additional security
     
     Returns:
-        user_id: The authenticated user's internal RAAS ID (not auth_provider_id)
+        user_id: The authenticated user's internal RAAS ID
         
     Raises:
-        HTTPException: If user is not authenticated
+        HTTPException: If user is not authenticated or session is invalid
     """
-    auth_provider_id = request.headers.get("X-Replit-User-Id")
-    user_name = request.headers.get("X-Replit-User-Name")
-    
-    # Require both headers for consistency (prevents partial spoofing)
-    if not auth_provider_id or not user_name:
+    # Get session token from Authorization header only (secure)
+    # SECURITY: Query params are logged and can leak via Referer headers
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required. Missing Replit Auth headers.",
-            headers={"WWW-Authenticate": "Replit-Auth"}
+            detail="Authentication required. Include session token in Authorization header: Authorization: Bearer <token>",
+            headers={"WWW-Authenticate": "Bearer"}
         )
     
-    # Verify user exists in database (prevents access before onboarding)
-    user = database_auth.get_user_by_auth_id(auth_provider_id)
+    session_token = auth_header.replace("Bearer ", "")
+    
+    # Validate session and get user_id
+    session = get_email_session(session_token)
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired session. Please log in again.",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    
+    user_id = session.get('user_id')
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid session data. Please log in again."
+        )
+    
+    # Verify user exists in database
+    user = database_auth.get_user_by_id(user_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User not found. Please complete onboarding in the Streamlit app first."
+            detail="User not found. Please complete onboarding in the app first."
         )
     
-    # CRITICAL: Return internal RAAS user ID, not auth_provider_id
-    # Todos are stored with user['id'] (internal UUID), not auth_provider_id
-    return user['id']
+    # Return internal RAAS user ID
+    return user_id
 
 # Pydantic Models for request/response validation
 
