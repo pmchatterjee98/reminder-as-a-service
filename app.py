@@ -67,7 +67,7 @@ if st.session_state.logged_out:
             <strong>Same Account:</strong> Click "Return to RAAS" to log back in as <strong>{}</strong>
         </p>
         <p style="color: rgba(248, 249, 250, 0.9); line-height: 1.6; margin-bottom: 0;">
-            <strong>Different Account:</strong> Click "Sign in with Different Account" to log out of Replit and sign in with another username
+            <strong>Different Account:</strong> Click "Log in with Different Account" to log out of Replit and log in with another username
         </p>
     </div>
     """.format(st.session_state.logout_username or "current user"), unsafe_allow_html=True)
@@ -83,12 +83,12 @@ if st.session_state.logged_out:
     
     with col2:
         # Use st.link_button for proper navigation in same window
-        st.link_button("👤 Sign in with Different Account", "https://replit.com/logout", use_container_width=True)
+        st.link_button("👤 Log in with Different Account", "https://replit.com/logout", use_container_width=True)
     
     # Note: We don't show a "Sign Up" button here because:
     # 1. If the user is still authenticated with Replit, they already have an account
-    # 2. To create a NEW account, they must log out of Replit first and sign in with a different Replit account
-    # 3. The "Sign in with Different Account" button above handles this flow
+    # 2. To create a NEW account, they must log out of Replit first and log in with a different Replit account
+    # 3. The "Log in with Different Account" button above handles this flow
     
     st.stop()
 
@@ -101,7 +101,7 @@ if not auth_context.is_authenticated:
         layout="centered"
     )
     
-    # Show styled login page
+    # Show styled login page with embedded Replit Auth
     st.markdown("""
     <div style="text-align: center; margin-top: 3rem;">
         <h1 style="font-size: 48px; margin-bottom: 16px;">⚡</h1>
@@ -110,13 +110,15 @@ if not auth_context.is_authenticated:
     </div>
     """, unsafe_allow_html=True)
     
-    st.info("🔐 **Sign in with your Replit account to access RAAS**")
+    st.info("🔐 **Log in with your Replit account to access RAAS**")
     
-    # Embed Replit Auth button
-    st.components.v1.html(get_login_html("Sign in with your Replit account to access RAAS"), height=600, scrolling=False)
+    # Embed Replit Auth button directly
+    st.components.v1.html("""
+        <script authed="location.reload()" src="https://auth.util.repl.co/script.js"></script>
+    """, height=80)
     
     st.markdown("---")
-    st.caption("💡 **New to RAAS?** Sign in with Replit and you'll be guided through a quick setup to create your account.")
+    st.caption("💡 **New to RAAS?** Log in with your Replit account and you'll be guided through a quick setup to create your account.")
     
     st.stop()
 
