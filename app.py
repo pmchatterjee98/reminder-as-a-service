@@ -82,26 +82,10 @@ if st.session_state.logged_out:
         # Use st.link_button for proper navigation in same window
         st.link_button("👤 Sign in with Different Account", "https://replit.com/logout", use_container_width=True)
     
-    st.markdown("---")
-    
-    # Sign up call-to-action for new users
-    st.markdown("""
-    <div style="text-align: center; margin-top: 2rem; padding: 1.5rem; background: linear-gradient(135deg, rgba(108, 92, 231, 0.1) 0%, rgba(0, 209, 178, 0.1) 100%); border-radius: 12px; border: 1px solid rgba(108, 92, 231, 0.3);">
-        <h3 style="color: #00D1B2; margin-top: 0;">Don't have RAAS?</h3>
-        <p style="color: rgba(248, 249, 250, 0.8); font-size: 1.1rem; margin: 1rem 0;">
-            Sign up and never miss anything! ⚡
-        </p>
-        <p style="color: rgba(248, 249, 250, 0.6); font-size: 0.9rem; margin-bottom: 1.5rem;">
-            Create your free account and start managing reminders across email, SMS, and WhatsApp
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    if st.button("🚀 Sign Up for RAAS", type="primary", use_container_width=True):
-        # Clear the logged_out flag to show the sign-up/onboarding flow
-        st.session_state.logged_out = False
-        st.session_state.logout_username = None
-        st.rerun()
+    # Note: We don't show a "Sign Up" button here because:
+    # 1. If the user is still authenticated with Replit, they already have an account
+    # 2. To create a NEW account, they must log out of Replit first and sign in with a different Replit account
+    # 3. The "Sign in with Different Account" button above handles this flow
     
     st.stop()
 
