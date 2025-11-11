@@ -110,15 +110,39 @@ if not auth_context.is_authenticated:
     </div>
     """, unsafe_allow_html=True)
     
-    st.info("🔐 **Log in with your Replit account to access RAAS**")
+    st.info("🔐 **Sign up or log in with your Replit account**")
     
-    # Embed Replit Auth button directly
+    # Embed Replit Auth button with proper styling
     st.components.v1.html("""
-        <script authed="location.reload()" src="https://auth.util.repl.co/script.js"></script>
-    """, height=80)
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {
+                    margin: 0;
+                    padding: 20px;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    background: transparent;
+                }
+                #replit-auth-container {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                }
+            </style>
+        </head>
+        <body>
+            <div id="replit-auth-container">
+                <script authed="location.reload()" src="https://auth.util.repl.co/script.js"></script>
+            </div>
+        </body>
+        </html>
+    """, height=100)
     
     st.markdown("---")
-    st.caption("💡 **New to RAAS?** Log in with your Replit account and you'll be guided through a quick setup to create your account.")
+    st.caption("💡 **New users** will be guided through a quick setup. **Existing users** will go straight to their dashboard.")
     
     st.stop()
 
