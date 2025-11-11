@@ -6,6 +6,7 @@ import database_auth
 import scheduler
 import csv
 import io
+import os
 from auth_replit import ReplitAuthContext, auth_manager, get_login_html
 
 # Initialize databases
@@ -101,7 +102,7 @@ if not auth_context.is_authenticated:
         layout="centered"
     )
     
-    # Show styled login page with embedded Replit Auth
+    # Show styled login page
     st.markdown("""
     <div style="text-align: center; margin-top: 3rem;">
         <h1 style="font-size: 48px; margin-bottom: 16px;">⚡</h1>
@@ -110,38 +111,22 @@ if not auth_context.is_authenticated:
     </div>
     """, unsafe_allow_html=True)
     
-    st.info("🔐 **Sign up or log in with your Replit account**")
+    st.info("🔐 **Sign up or log in with your Replit account to continue**")
     
-    # Embed Replit Auth button with proper styling
-    st.components.v1.html("""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <style>
-                body {
-                    margin: 0;
-                    padding: 20px;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    background: transparent;
-                }
-                #replit-auth-container {
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                }
-            </style>
-        </head>
-        <body>
-            <div id="replit-auth-container">
-                <script authed="location.reload()" src="https://auth.util.repl.co/script.js"></script>
-            </div>
-        </body>
-        </html>
-    """, height=100)
+    st.markdown("<br>", unsafe_allow_html=True)
     
-    st.markdown("---")
+    # Create centered button using columns
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        # Use a link button to trigger Replit auth
+        st.link_button(
+            "🔐 Continue with Replit",
+            "https://replit.com/auth_with_repl_site?domain=" + os.getenv("REPLIT_DOMAINS", "").split(",")[0] if os.getenv("REPLIT_DOMAINS") else "#",
+            type="primary",
+            use_container_width=True
+        )
+    
+    st.markdown("<br>", unsafe_allow_html=True)
     st.caption("💡 **New users** will be guided through a quick setup. **Existing users** will go straight to their dashboard.")
     
     st.stop()
