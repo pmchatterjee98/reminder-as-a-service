@@ -79,8 +79,10 @@ class EncryptionManager:
             decrypted_bytes = self.cipher.decrypt(ciphertext.encode())
             return decrypted_bytes.decode('utf-8')
         except Exception as e:
-            print(f"Decryption error: {e}")
-            raise
+            # If decryption fails (wrong key, corrupted data), return None gracefully
+            # This can happen if ENCRYPTION_KEY changed between app runs
+            print(f"Decryption error (likely wrong encryption key): {e}")
+            return None
     
     def encrypt_contact_info(self, email: Optional[str] = None, 
                             phone: Optional[str] = None,
