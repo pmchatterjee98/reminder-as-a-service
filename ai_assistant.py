@@ -1,19 +1,42 @@
 """
 AI Intelligence Module for RAAS
 Provides natural language task creation, auto-categorization, smart scheduling, and productivity insights
+
+IMPORTANT: All AI features are OPTIONAL. RAAS works perfectly without them.
+AI features require OPENAI_API_KEY environment variable to be set.
 """
 
 import os
 import json
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
-from openai import OpenAI
 
-# Initialize OpenAI client
-# the newest OpenAI model is "gpt-5" which was released August 7, 2025.
-# do not change this unless explicitly requested by the user
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-openai_client = OpenAI(api_key=OPENAI_API_KEY)
+# Lazy import and initialization - only load OpenAI if API key is available
+_openai_client = None
+
+def _get_openai_client():
+    """Get OpenAI client, initializing it lazily if needed."""
+    global _openai_client
+    
+    if _openai_client is not None:
+        return _openai_client
+    
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        return None
+    
+    try:
+        from openai import OpenAI
+        # the newest OpenAI model is "gpt-5" which was released August 7, 2025.
+        # do not change this unless explicitly requested by the user
+        _openai_client = OpenAI(api_key=api_key)
+        return _openai_client
+    except Exception:
+        return None
+
+def is_ai_available() -> bool:
+    """Check if AI features are available (OpenAI API key is set)."""
+    return _get_openai_client() is not None
 
 def parse_natural_language_task(user_input: str, current_categories: List[str] = None) -> Dict:
     """
@@ -26,6 +49,18 @@ def parse_natural_language_task(user_input: str, current_categories: List[str] =
     Returns:
         Dictionary with task details (title, description, due_date, category, priority)
     """
+    client = _get_openai_client()
+    if not client:
+        # Fallback: Create a simple task with the input as title
+        return {
+            "title": user_input[:100],
+            "description": "",
+            "due_date": (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S'),
+            "category": "Personal",
+            "priority": "Medium",
+            "reminder_hours": 24
+        }
+    
     try:
         categories_context = ""
         if current_categories:
@@ -65,7 +100,7 @@ Respond ONLY with valid JSON in this exact format:
   "reminder_hours": 24
 }}"""
 
-        response = openai_client.chat.completions.create(
+        response = client.chat.completions.create(
             model="gpt-5",
             messages=[
                 {"role": "system", "content": "You are a smart task parsing assistant. Always respond with valid JSON."},
@@ -102,6 +137,10 @@ def auto_categorize_task(title: str, description: str, existing_categories: List
     Returns:
         Category name (from existing categories or a new one)
     """
+    client = _get_openai_client()
+    if not client:
+        return 'Personal'
+    
     try:
         categories_list = ', '.join(existing_categories) if existing_categories else "Work, Personal, Shopping, Health, Finance"
         
@@ -117,7 +156,7 @@ Respond with ONLY the category name in JSON format.
 
 Example response: {{"category": "Work"}}"""
 
-        response = openai_client.chat.completions.create(
+        response = client.chat.completions.create(
             model="gpt-5",
             messages=[
                 {"role": "system", "content": "You are a task categorization expert. Respond with valid JSON."},
@@ -146,6 +185,12 @@ def suggest_smart_schedule(title: str, description: str, priority: str) -> Tuple
     Returns:
         Tuple of (due_date string, reminder_hours)
     """
+    client = _get_openai_client()
+    if not client:
+        # Default: tomorrow at 5 PM, 24 hour reminder
+        due_date = (datetime.now() + timedelta(days=1)).replace(hour=17, minute=0, second=0)
+        return due_date.strftime('%Y-%m-%d %H:%M:%S'), 24
+    
     try:
         prompt = f"""You are a smart scheduling assistant. Suggest an optimal due date and reminder time for this task.
 
@@ -168,7 +213,7 @@ Respond with JSON:
   "reasoning": "Brief explanation of why this schedule makes sense"
 }}"""
 
-        response = openai_client.chat.completions.create(
+        response = client.chat.completions.create(
             model="gpt-5",
             messages=[
                 {"role": "system", "content": "You are a smart scheduling expert. Respond with valid JSON."},
@@ -197,6 +242,14 @@ def generate_productivity_insights(tasks: List[Dict]) -> Dict:
     Returns:
         Dictionary with insights and recommendations
     """
+    client = _get_openai_client()
+    if not client:
+        return {
+            "summary": "AI insights are unavailable. Set OPENAI_API_KEY to enable AI-powered productivity analysis.",
+            "recommendations": [],
+            "patterns": []
+        }
+    
     try:
         if not tasks:
             return {
@@ -233,7 +286,7 @@ Respond with JSON:
   "patterns": ["Pattern 1", "Pattern 2", ...]
 }}"""
 
-        response = openai_client.chat.completions.create(
+        response = client.chat.completions.create(
             model="gpt-5",
             messages=[
                 {"role": "system", "content": "You are a helpful productivity coach. Respond with valid JSON."},
@@ -265,6 +318,10 @@ def chat_with_assistant(user_message: str, tasks_context: List[Dict] = None) -> 
     Returns:
         AI assistant's response
     """
+    client = _get_openai_client()
+    if not client:
+        return "AI assistant is unavailable. To enable AI features, set your OPENAI_API_KEY in Replit Secrets."
+    
     try:
         context = ""
         if tasks_context:
@@ -281,7 +338,7 @@ User question: {user_message}{context}
 
 Provide a helpful, friendly, and concise response. Be encouraging and practical."""
 
-        response = openai_client.chat.completions.create(
+        response = client.chat.completions.create(
             model="gpt-5",
             messages=[
                 {"role": "system", "content": "You are RAAS AI, a friendly and helpful task management assistant."},
